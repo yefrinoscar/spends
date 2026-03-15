@@ -2,9 +2,12 @@ import { Link } from '@tanstack/react-router'
 import {
   ArrowDownToLine,
   CalendarClock,
+  ChevronDown,
+  ChevronRight,
   CircleDollarSign,
   Coins,
   Landmark,
+  MoreVertical,
   Pencil,
   PiggyBank,
   Plus,
@@ -15,7 +18,7 @@ import {
   WalletCards,
 } from 'lucide-react'
 import type { FormEvent, ReactNode } from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -30,6 +33,23 @@ import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Select } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Table,
   TableBody,
@@ -44,6 +64,7 @@ import {
   formatDate,
   formatPercent,
   getAverageInvestmentChange,
+  getDebtMonthlyPayment,
   getAverageRate,
   getDashboardSummary,
   getDebtMonthlyPlan,
@@ -70,6 +91,19 @@ import type {
 } from '@/lib/finance'
 
 type FinanceActions = ReturnType<typeof useFinanceActions>
+
+type DebtPlanTableRow = {
+  key: string
+  monthLabel: string
+  debtId: string
+  debtName: string
+  payment: number
+  interest: number
+  endingBalance: number
+  monthTotalPayment: number
+  installmentNumber: number
+  installmentTotal: number
+}
 
 function useHydrated() {
   const [hydrated, setHydrated] = useState(false)
@@ -344,14 +378,14 @@ function DebtProjectionChart({
 
   if (!points.length) {
     return (
-      <div className="flex h-[240px] items-center justify-center rounded-2xl border border-dashed border-[var(--border)] text-sm text-[var(--foreground-soft)]">
+      <div className="flex h-[80px] items-center justify-center rounded-2xl border border-dashed border-[var(--border)] text-sm text-[var(--foreground-soft)]">
         Add a debt to see the payoff curve.
       </div>
     )
   }
 
   const width = 700
-  const height = 240
+  const height = 80
   const paddingX = 10
   const paddingTop = 12
   const paddingBottom = 26
@@ -391,21 +425,13 @@ function DebtProjectionChart({
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.12em] text-[var(--foreground-faint)]">
-            {activePoint.monthIndex === 0 ? 'Now' : activePoint.label}
-          </p>
-          <p className="mt-1 font-mono text-lg text-[var(--foreground)]">
-            {formatCurrency(activePoint.balance, currency)}
-          </p>
-        </div>
-        <div className="text-right text-xs text-[var(--foreground-faint)]">
-          <p>Hover the chart</p>
-          <p className="mt-1">
-            Balance goes to zero with current minimum payments.
-          </p>
-        </div>
+      <div className="mb-3">
+        <p className="text-xs uppercase tracking-[0.12em] text-[var(--foreground-faint)]">
+          {activePoint.monthIndex === 0 ? 'Now' : activePoint.label}
+        </p>
+        <p className="mt-1 font-mono text-lg text-[var(--foreground)]">
+          {formatCurrency(activePoint.balance, currency)}
+        </p>
       </div>
       <div className="mb-3 flex items-center justify-between gap-4 text-xs text-[var(--foreground-faint)]">
         <span>{formatCurrency(firstBalance, currency)}</span>
@@ -419,29 +445,31 @@ function DebtProjectionChart({
       >
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="h-[240px] w-full"
+          className="h-[80px] w-full"
           role="img"
         >
           <path
             d={`M ${paddingX} ${height - paddingBottom} H ${width - paddingX}`}
-            stroke="var(--border)"
+            className="stroke-violet-500"
+            strokeOpacity="0.3"
           />
-          <path d={areaPath} fill="rgba(255,255,255,0.06)" />
+          <path d={areaPath} className="fill-violet-500" fillOpacity="0.15" />
           <path
             d={linePath}
             fill="none"
-            stroke="var(--foreground)"
+            className="stroke-violet-500"
             strokeWidth="2.5"
           />
           <path
             d={`M ${activePoint.x} ${paddingTop} V ${height - paddingBottom}`}
-            stroke="rgba(255,255,255,0.18)"
+            className="stroke-violet-300"
+            strokeOpacity="0.4"
             strokeDasharray="4 6"
           />
           <circle
             cx={activePoint.x}
             cy={activePoint.y}
-            fill="var(--foreground)"
+            className="fill-violet-400"
             r="4.5"
           />
         </svg>
@@ -474,6 +502,149 @@ function DebtProjectionChart({
   )
 }
 
+type RecurringPayment = {
+  id: string
+  name: string
+  category: string
+  amount: number
+  currency: string
+  dueDay: number
+  createdAt: string
+}
+
+function RecurringPaymentForm({
+  onSubmit,
+  busy,
+  defaultCurrency,
+}: {
+  onSubmit: (value: Omit<RecurringPayment, 'id' | 'createdAt'>) => Promise<unknown>
+  busy: boolean
+  defaultCurrency: string
+}) {
+  const [form, setForm] = useState({
+    name: '',
+    category: '',
+    currency: defaultCurrency,
+    amount: '',
+    dueDay: '1',
+  })
+
+  useEffect(() => {
+    setForm((current) => ({
+      ...current,
+      currency: defaultCurrency,
+    }))
+  }, [defaultCurrency])
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!form.name.trim()) {
+      return
+    }
+
+    await onSubmit({
+      name: form.name.trim(),
+      category: form.category.trim() || 'Subscription',
+      currency: form.currency,
+      amount: parseMoney(form.amount),
+      dueDay: Math.max(1, Math.min(31, Math.round(parseMoney(form.dueDay) || 1))),
+    })
+
+    setForm({
+      name: '',
+      category: '',
+      currency: defaultCurrency,
+      amount: '',
+      dueDay: '1',
+    })
+  }
+
+  return (
+    <form className="space-y-4" onSubmit={handleSubmit}>
+      <Field htmlFor="recurring-name" label="Name">
+        <Input
+          id="recurring-name"
+          value={form.name}
+          onChange={(event) =>
+            setForm((current) => ({ ...current, name: event.target.value }))
+          }
+          placeholder="Netflix subscription"
+        />
+      </Field>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field htmlFor="recurring-category" label="Category">
+          <Input
+            id="recurring-category"
+            value={form.category}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, category: event.target.value }))
+            }
+            placeholder="Subscription, Rent, etc."
+          />
+        </Field>
+        <Field htmlFor="recurring-currency" label="Currency">
+          <Select
+            id="recurring-currency"
+            value={form.currency}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                currency: event.target.value,
+              }))
+            }
+          >
+            <option value="USD">USD</option>
+            <option value="PEN">PEN</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="MXN">MXN</option>
+            <option value="COP">COP</option>
+          </Select>
+        </Field>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field htmlFor="recurring-amount" label="Amount">
+          <Input
+            id="recurring-amount"
+            inputMode="decimal"
+            type="number"
+            step="0.01"
+            value={form.amount}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                amount: event.target.value,
+              }))
+            }
+            placeholder="0"
+          />
+        </Field>
+        <Field htmlFor="recurring-day" label="Due day of month">
+          <Input
+            id="recurring-day"
+            type="number"
+            min="1"
+            max="31"
+            value={form.dueDay}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                dueDay: event.target.value,
+              }))
+            }
+            placeholder="1"
+          />
+        </Field>
+      </div>
+      <Button className="w-full" disabled={busy} type="submit">
+        <Plus className="h-4 w-4" />
+        Add recurring payment
+      </Button>
+    </form>
+  )
+}
+
 function DebtForm({
   onSubmit,
   busy,
@@ -496,7 +667,7 @@ function DebtForm({
     currency: defaultCurrency,
     balance: '',
     rate: '',
-    minPayment: '',
+    payments: '1',
     dueDate: '',
   })
 
@@ -509,7 +680,7 @@ function DebtForm({
         currency: defaultCurrency,
         balance: '',
         rate: '',
-        minPayment: '',
+        payments: '1',
         dueDate: '',
       })
 
@@ -523,7 +694,7 @@ function DebtForm({
       currency: initialValue.currency,
       balance: String(initialValue.balance),
       rate: String(initialValue.rate),
-      minPayment: String(initialValue.minPayment),
+      payments: String(initialValue.payments ?? 1),
       dueDate: initialValue.dueDate,
     })
   }, [defaultCurrency, initialValue])
@@ -542,7 +713,7 @@ function DebtForm({
       currency: form.currency,
       balance: parseMoney(form.balance),
       rate: parseMoney(form.rate),
-      minPayment: parseMoney(form.minPayment),
+      payments: Math.max(1, Math.round(parseMoney(form.payments) || 1)),
       dueDate: form.dueDate || new Date().toISOString().slice(0, 10),
     })
 
@@ -554,7 +725,7 @@ function DebtForm({
         currency: defaultCurrency,
         balance: '',
         rate: '',
-        minPayment: '',
+        payments: '1',
         dueDate: '',
       })
     }
@@ -651,19 +822,19 @@ function DebtForm({
         </Field>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field htmlFor="debt-min" label="Min payment">
+        <Field htmlFor="debt-payments" label="Installments">
           <Input
-            id="debt-min"
-            inputMode="decimal"
+            id="debt-payments"
             type="number"
-            value={form.minPayment}
+            min="1"
+            value={form.payments}
             onChange={(event) =>
               setForm((current) => ({
                 ...current,
-                minPayment: event.target.value,
+                payments: event.target.value,
               }))
             }
-            placeholder="0"
+            placeholder="1"
           />
         </Field>
         <Field htmlFor="debt-due" label="Due date">
@@ -1182,7 +1353,7 @@ function OverviewView({ data }: { data: DashboardData }) {
         <MetricCard
           title="Debt load"
           value={formatCurrency(summary.totalDebt, currency)}
-          note={`${formatCurrency(summary.totalMinimums, currency)} in minimums every month.`}
+          note={`Total principal and interest to be paid.`}
           icon={Landmark}
         />
         <MetricCard
@@ -1279,9 +1450,9 @@ function OverviewView({ data }: { data: DashboardData }) {
                 <p className="font-mono text-sm text-[var(--foreground)]">
                   {nextGoal
                     ? formatCurrency(
-                        Math.max(nextGoal.target - nextGoal.current, 0),
-                        currency,
-                      )
+                      Math.max(nextGoal.target - nextGoal.current, 0),
+                      currency,
+                    )
                     : '--'}
                 </p>
               </div>
@@ -1337,7 +1508,7 @@ function OverviewView({ data }: { data: DashboardData }) {
           title="Debts"
           href="/debts"
           value={formatCompactCurrency(summary.totalDebt, currency)}
-          note={`${data.debts.length} balances with ${formatCurrency(summary.totalMinimums, currency)} due each month.`}
+          note={`${data.debts.length} balances to pay off.`}
           summary={
             nextDebt
               ? `Next due ${formatDate(nextDebt.dueDate)}`
@@ -1457,8 +1628,15 @@ function DebtsView({
   const defaultCurrency = data.settings.currency
   const [showNewDebt, setShowNewDebt] = useState(false)
   const [editingDebtId, setEditingDebtId] = useState<string | null>(null)
+  const [expandedDebtIds, setExpandedDebtIds] = useState<string[]>([])
   const [currencyView, setCurrencyView] = useState(defaultCurrency)
   const [monthlyBudgetInput, setMonthlyBudgetInput] = useState('')
+  const [showPaymentSheet, setShowPaymentSheet] = useState(false)
+  const [paymentForm, setPaymentForm] = useState({
+    description: '',
+    amount: '',
+    date: new Date().toISOString().slice(0, 10),
+  })
   const hasDemoData = isSeedDataActive(data)
   const debts = useMemo(
     () => sortByDateAscending(data.debts, (item) => item.dueDate),
@@ -1477,7 +1655,7 @@ function DebtsView({
   const averageRate = getAverageRate(debtScope)
   const nextDue = getSoonestDate(debtScope.map((debt) => debt.dueDate))
   const monthlyDebtPayment = debtScope.reduce(
-    (sum, debt) => sum + debt.minPayment,
+    (sum, debt) => sum + getDebtMonthlyPayment(debt.balance, debt.payments),
     0,
   )
   const monthlyBudget = Math.max(
@@ -1489,6 +1667,79 @@ function DebtsView({
     () => getDebtMonthlyPlan(debtScope, monthlyBudget),
     [debtScope, monthlyBudget],
   )
+  const monthlyPlanPreview = useMemo(
+    () => monthlyPlan.slice(0, 18),
+    [monthlyPlan],
+  )
+  const installmentTotalsByDebtId = useMemo(
+    () =>
+      new Map(
+        debtScope.map((debt) => [
+          debt.id,
+          Math.max(1, Math.round(debt.payments || 1)),
+        ]),
+      ),
+    [debtScope],
+  )
+  const monthlyPlanTableRows = useMemo<DebtPlanTableRow[]>(() => {
+    const paidInstallmentsByDebtId = new Map<string, number>()
+
+    return monthlyPlanPreview.flatMap((row) =>
+      row.debts.map((debt) => {
+        const paidInstallments =
+          (paidInstallmentsByDebtId.get(debt.id) ?? 0) + 1
+
+        paidInstallmentsByDebtId.set(debt.id, paidInstallments)
+
+        const installmentTotal =
+          installmentTotalsByDebtId.get(debt.id) ?? paidInstallments
+
+        return {
+          key: `${row.monthIndex}-${debt.id}`,
+          monthLabel: row.label,
+          debtId: debt.id,
+          debtName: debt.name,
+          payment: debt.payment,
+          interest: debt.interest,
+          endingBalance: debt.endingBalance,
+          monthTotalPayment: row.totalPayment,
+          installmentNumber: Math.min(paidInstallments, installmentTotal),
+          installmentTotal,
+        }
+      }),
+    )
+  }, [installmentTotalsByDebtId, monthlyPlanPreview])
+  const monthlyPlanRowsByDebtId = useMemo(() => {
+    const map = new Map<string, DebtPlanTableRow[]>()
+
+    debtScope.forEach((debt) => {
+      const plannedInstallments = Math.max(1, Math.round(debt.payments || 1))
+      const installmentPayment = debt.balance / plannedInstallments
+      const rows: DebtPlanTableRow[] = []
+
+      // Create installments based on planned number, not actual payment plan
+      for (let i = 0; i < plannedInstallments; i++) {
+        rows.push({
+          key: `planned-${debt.id}-${i}`,
+          monthLabel: `Month ${i + 1}`,
+          debtId: debt.id,
+          debtName: debt.name,
+          payment: installmentPayment,
+          interest: 0, // Simplified for display
+          endingBalance: debt.balance - (installmentPayment * (i + 1)),
+          monthTotalPayment: installmentPayment,
+          installmentNumber: i + 1,
+          installmentTotal: plannedInstallments,
+        })
+      }
+
+      if (rows.length > 0) {
+        map.set(debt.id, rows)
+      }
+    })
+
+    return map
+  }, [debtScope])
   const monthsToZero =
     monthlyPlan.length > 1 && monthlyPlan.at(-1)?.endingBalance === 0
       ? monthlyPlan.length
@@ -1505,6 +1756,12 @@ function DebtsView({
     setMonthlyBudgetInput(String(monthlyDebtPayment || 0))
   }, [currencyView, monthlyDebtPayment])
 
+  useEffect(() => {
+    setExpandedDebtIds((current) =>
+      current.filter((debtId) => debtScope.some((debt) => debt.id === debtId)),
+    )
+  }, [debtScope])
+
   function openNewDebtForm() {
     setEditingDebtId(null)
     setShowNewDebt(true)
@@ -1520,117 +1777,426 @@ function DebtsView({
     setEditingDebtId(null)
   }
 
+  function toggleDebtDetails(debtId: string) {
+    setExpandedDebtIds((current) =>
+      current.includes(debtId)
+        ? current.filter((item) => item !== debtId)
+        : [...current, debtId],
+    )
+  }
+
   return (
-    <main className="page-wrap pb-16 pt-10">
-      <section className="grid gap-3 xl:grid-cols-[minmax(0,1.55fr)_240px]">
-        <div className="rounded-[1.1rem] border border-[var(--border)] bg-[var(--panel)] p-3 sm:p-3.5">
-          <div className="flex items-center justify-between gap-3">
+    <main className="page-wrap flex min-h-0 flex-1 flex-col pb-4 pt-6">
+      <section className="grid min-h-0 flex-1 gap-3 overflow-hidden xl:grid-cols-3">
+        {/* Column 1: Debt Table */}
+        <div className="flex min-h-0 flex-col rounded-[1.1rem] border border-[var(--border)] bg-[var(--panel)] p-3 sm:p-3.5">
+          <div className="mb-3 flex items-center justify-between gap-2">
             <div>
-              <p className="eyebrow">Debt</p>
-              <h1 className="mt-1 text-base font-semibold tracking-tight text-[var(--foreground)] sm:text-lg">
-                Paydown curve
-              </h1>
+              <p className="eyebrow">Debts</p>
+              <h2 className="mt-1 text-base font-semibold tracking-tight text-[var(--foreground)]">
+                Debt details
+              </h2>
             </div>
-            <div className="flex items-center gap-2">
-              {hasDemoData ? <Badge>Demo data</Badge> : null}
-              <Button
-                size="sm"
-                variant={showNewDebt ? 'outline' : 'secondary'}
-                onClick={showNewDebt ? closeDebtForm : openNewDebtForm}
-              >
-                {showNewDebt ? 'Close' : 'New'}
-              </Button>
+            <Button
+              size="sm"
+              variant={showNewDebt ? 'outline' : 'secondary'}
+              onClick={showNewDebt ? closeDebtForm : openNewDebtForm}
+            >
+              {showNewDebt ? 'Close' : 'New'}
+            </Button>
+          </div>
+
+          {debtScope.length ? (
+            <div className="flex-1 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+              {debtScope.map((debt) => {
+                const monthlyPayment = getDebtMonthlyPayment(
+                  debt.balance,
+                  debt.payments,
+                )
+                const installmentRows =
+                  monthlyPlanRowsByDebtId.get(debt.id) ?? []
+                const actualInstallments = installmentRows.length
+                const plannedInstallments = Math.max(1, Math.round(debt.payments || 1))
+
+                return (
+                  <div
+                    key={debt.id}
+                    className="rounded-lg bg-[var(--surface-muted)] p-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-[var(--foreground)] truncate">
+                          {debt.name}
+                        </p>
+                        <p className="text-[10px] text-[var(--foreground-faint)] mt-0.5">
+                          {debt.lender} · {debt.type}
+                        </p>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            className="h-6 w-6"
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEditDebtForm(debt.id)}>
+                            <Pencil className="h-4 w-4" />
+                            Edit debt
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              void actions.removeItem({
+                                kind: 'debts',
+                                id: debt.id,
+                              })
+                            }
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete debt
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="space-y-1.5 text-[11px] mb-2">
+                      <div className="flex justify-between">
+                        <span className="text-[var(--foreground-soft)]">Balance</span>
+                        <span className="font-mono text-[var(--foreground)]">
+                          {formatCurrency(debt.balance, debt.currency)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="border-t border-[var(--border)] pt-2">
+                      <p className="text-[9px] uppercase tracking-wider text-[var(--foreground-faint)] mb-1.5">
+                        Installments ({actualInstallments} payments)
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {installmentRows.length ? (
+                          installmentRows.map((row, index) => (
+                            <div
+                              key={row.key}
+                              className="inline-flex items-center gap-1 rounded bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-medium text-violet-600"
+                            >
+                              {index + 1}/{actualInstallments} {formatCurrency(row.payment, currencyView)}
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-xs text-[var(--foreground-soft)]">
+                            {plannedInstallments} planned installments
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          </div>
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            <Field htmlFor="debt-currency-view" label="Currency">
-              <Select
-                id="debt-currency-view"
-                value={currencyView}
-                onChange={(event) => setCurrencyView(event.target.value)}
-              >
-                {debtCurrencies.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field htmlFor="debt-budget" label="Monthly budget">
-              <Input
-                id="debt-budget"
-                type="number"
-                inputMode="decimal"
-                min={monthlyDebtPayment}
-                value={monthlyBudgetInput}
-                onChange={(event) => setMonthlyBudgetInput(event.target.value)}
-              />
-            </Field>
-          </div>
-          <div className="mt-3">
-            <DebtProjectionChart currency={currencyView} points={projection} />
-          </div>
+          ) : (
+            <div className="rounded-lg border-dashed p-4 text-center text-sm text-[var(--foreground-soft)] opacity-50">
+              No debts in {currencyView}. Click New to add one.
+            </div>
+          )}
         </div>
 
-        <div className="rounded-[1.1rem] border border-[var(--border)] bg-[var(--panel)] p-3 sm:p-3.5">
-          <p className="eyebrow">This month</p>
-          <p className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-3xl">
-            {formatCurrency(monthlyBudget, currencyView)}
-          </p>
-          <p className="mt-1 text-xs leading-5 text-[var(--foreground-soft)]">
-            Planned monthly payment.
-          </p>
+        {/* Column 2: Recurring Payments */}
+        <div className="flex min-h-0 flex-col rounded-[1.1rem] border border-[var(--border)] bg-[var(--panel)] p-3 sm:p-3.5">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="eyebrow">Recurring Payments</p>
+              <h2 className="mt-1 text-base font-semibold tracking-tight text-[var(--foreground)]">
+                Monthly subscriptions
+              </h2>
+            </div>
+            <Sheet open={showPaymentSheet} onOpenChange={setShowPaymentSheet}>
+              <SheetTrigger asChild>
+                <Button size="sm" variant="secondary">
+                  New
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-full sm:max-w-md">
+                <SheetHeader>
+                  <SheetTitle>Record Monthly Payment</SheetTitle>
+                  <SheetDescription>
+                    Add a payment entry for this month to track your debt progress.
+                  </SheetDescription>
+                </SheetHeader>
+                <form
+                  className="mt-6 space-y-5"
+                  onSubmit={async (event) => {
+                    event.preventDefault()
 
-          <div className="mt-3 space-y-2 border-t border-[var(--border)] pt-3 text-xs">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-[var(--foreground-soft)]">Total owed</span>
-              <span className="font-mono text-[var(--foreground)]">
-                {formatCurrency(totalBalance, currencyView)}
-              </span>
+                    if (!paymentForm.description.trim() || !paymentForm.amount) {
+                      return
+                    }
+
+                    // Here you can handle the payment submission
+                    console.log('Payment submitted:', {
+                      description: paymentForm.description.trim(),
+                      amount: parseMoney(paymentForm.amount),
+                      date: paymentForm.date,
+                      currency: currencyView,
+                    })
+
+                    setShowPaymentSheet(false)
+                    setPaymentForm({
+                      description: '',
+                      amount: '',
+                      date: new Date().toISOString().slice(0, 10),
+                    })
+                  }}
+                >
+                  <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                    <p className="text-xs uppercase tracking-[0.12em] text-[var(--foreground-faint)]">
+                      Currency
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-[var(--foreground)]">
+                      {currencyView}
+                    </p>
+                  </div>
+
+                  <Field htmlFor="payment-description" label="Payment Description">
+                    <Input
+                      id="payment-description"
+                      value={paymentForm.description}
+                      onChange={(event) =>
+                        setPaymentForm((current) => ({
+                          ...current,
+                          description: event.target.value,
+                        }))
+                      }
+                      placeholder="Rent, Netflix, Gym membership"
+                      required
+                    />
+                  </Field>
+
+                  <Field htmlFor="payment-amount" label={`Amount (${currencyView})`}>
+                    <Input
+                      id="payment-amount"
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min="0.01"
+                      value={paymentForm.amount}
+                      onChange={(event) =>
+                        setPaymentForm((current) => ({
+                          ...current,
+                          amount: event.target.value,
+                        }))
+                      }
+                      placeholder="0.00"
+                      required
+                    />
+                  </Field>
+
+                  <Field htmlFor="payment-category" label="Category">
+                    <Input
+                      id="payment-category"
+                      value={paymentForm.date}
+                      onChange={(event) =>
+                        setPaymentForm((current) => ({
+                          ...current,
+                          date: event.target.value,
+                        }))
+                      }
+                      placeholder="Subscription, Rent, Utilities"
+                    />
+                  </Field>
+
+                  <Separator />
+
+                  <SheetFooter className="gap-2">
+                    <SheetClose asChild>
+                      <Button type="button" variant="outline" className="flex-1">
+                        Cancel
+                      </Button>
+                    </SheetClose>
+                    <Button type="submit" className="flex-1">
+                      <Plus className="h-4 w-4" />
+                      Save
+                    </Button>
+                  </SheetFooter>
+                </form>
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          {data.recurringPayments.length ? (
+            <div className="flex-1 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+              {data.recurringPayments.map((payment) => (
+                <div
+                  key={payment.id}
+                  className="rounded-lg bg-[var(--surface-muted)] p-2.5"
+                >
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-[var(--foreground)] truncate">
+                        {payment.name}
+                      </p>
+                      <p className="text-[10px] text-[var(--foreground-faint)] mt-0.5">
+                        {payment.category} · Due day {payment.dueDay}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono text-sm text-[var(--foreground)] whitespace-nowrap">
+                        {formatCurrency(payment.amount, payment.currency)}
+                      </span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            className="h-6 w-6"
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Pencil className="h-4 w-4" />
+                            Edit payment
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600">
+                            <Trash2 className="h-4 w-4" />
+                            Delete payment
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-[var(--foreground-soft)]">Average APR</span>
-              <span className="font-mono text-[var(--foreground)]">
-                {averageRate.toFixed(1)}%
-              </span>
+          ) : (
+            <div className="space-y-2">
+              <div className="rounded-lg bg-[var(--surface-muted)] p-3">
+                <p className="text-xs text-[var(--foreground-faint)]">No recurring payments added yet.</p>
+                <p className="mt-1 text-xs text-[var(--foreground-soft)]">Click New to register your subscriptions and monthly bills.</p>
+              </div>
             </div>
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-[var(--foreground-soft)]">Next due</span>
-              <span className="font-mono text-[var(--foreground)]">
-                {nextDue ? formatDate(nextDue) : '--'}
-              </span>
+          )}
+
+        </div>
+
+        {/* Column 3: Summary */}
+        <div className="flex min-h-0 flex-col rounded-[1.1rem] border border-[var(--border)] bg-[var(--panel)] p-3 sm:p-3.5">
+          <div className="mb-3">
+            <p className="eyebrow">Summary</p>
+            <h2 className="mt-1 text-base font-semibold tracking-tight text-[var(--foreground)]">
+              Complete overview
+            </h2>
+          </div>
+
+          <DebtProjectionChart currency={currencyView} points={projection} />
+
+          <div className="mt-3 space-y-3">
+            <div className="rounded-lg bg-[var(--surface-muted)] p-2.5">
+              <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--foreground-faint)] mb-2">
+                Monthly Payments
+              </p>
+              <div className="space-y-1.5 text-xs">
+                {debtScope.length ? (
+                  debtScope.map((debt) => {
+                    const monthlyPayment = getDebtMonthlyPayment(
+                      debt.balance,
+                      debt.payments,
+                    )
+                    return (
+                      <div key={debt.id} className="flex justify-between">
+                        <span className="text-[var(--foreground-soft)] truncate mr-2">
+                          {debt.name}
+                        </span>
+                        <span className="font-mono text-violet-600 whitespace-nowrap">
+                          {formatCurrency(monthlyPayment, debt.currency)}
+                        </span>
+                      </div>
+                    )
+                  })
+                ) : (
+                  <div className="flex justify-between">
+                    <span className="text-[var(--foreground-soft)]">No debts</span>
+                    <span className="font-mono text-[var(--foreground)]">--</span>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-[var(--foreground-soft)]">ETA</span>
-              <span className="font-mono text-[var(--foreground)]">
-                {monthsToZero ? `${monthsToZero} mo` : 'Open'}
-              </span>
+
+            <div className="rounded-lg bg-[var(--surface-muted)] p-2.5">
+              <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--foreground-faint)] mb-2">
+                Recurring Payments Detail
+              </p>
+              <div className="space-y-1.5 text-xs">
+                {data.recurringPayments.length ? (
+                  data.recurringPayments.map((payment) => (
+                    <div key={payment.id} className="flex justify-between">
+                      <span className="text-[var(--foreground-soft)] truncate mr-2">
+                        {payment.name}
+                      </span>
+                      <span className="font-mono text-emerald-600 whitespace-nowrap">
+                        {formatCurrency(payment.amount, payment.currency)}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex justify-between">
+                    <span className="text-[var(--foreground-soft)]">No recurring payments</span>
+                    <span className="font-mono text-[var(--foreground)]">--</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-lg bg-[var(--surface-muted)] p-2.5">
+              <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--foreground-faint)] mb-2">
+                Combined Overview
+              </p>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-[var(--foreground-soft)]">All debts</span>
+                  <span className="font-mono text-[var(--foreground)]">
+                    {formatCurrency(totalBalance, currencyView)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--foreground-soft)]">All recurring</span>
+                  <span className="font-mono text-[var(--foreground)]">
+                    {formatCurrency(
+                      data.recurringPayments.reduce((sum, p) => sum + p.amount, 0),
+                      currencyView
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between border-t border-[var(--border)] pt-1.5 mt-1.5 font-semibold">
+                  <span className="text-[var(--foreground)]">Combined monthly</span>
+                  <span className="font-mono text-violet-600">
+                    {formatCurrency(
+                      monthlyDebtPayment + data.recurringPayments.reduce((sum, p) => sum + p.amount, 0),
+                      currencyView
+                    )}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mt-3 rounded-[1.1rem] border border-[var(--border)] bg-[var(--panel)]">
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-3 py-2 sm:px-3.5">
-          <div>
-            <h2 className="text-sm font-semibold tracking-tight text-[var(--foreground)]">
-              Debts
-            </h2>
-            <p className="mt-0.5 text-xs text-[var(--foreground-soft)]">
-              {debtScope.length} items
-            </p>
-          </div>
-          <Button
-            size="sm"
-            variant={showNewDebt ? 'outline' : 'secondary'}
-            onClick={showNewDebt ? closeDebtForm : openNewDebtForm}
-          >
-            {showNewDebt ? 'Close' : 'New'}
-          </Button>
-        </div>
-
-        {showNewDebt ? (
-          <div className="border-b border-[var(--border)] px-3 py-3 sm:px-3.5">
+      <Sheet open={showNewDebt} onOpenChange={(open) => !open && closeDebtForm()}>
+        <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
+          <SheetHeader>
+            <SheetTitle>
+              {editingDebt ? 'Edit Debt' : 'Add New Debt'}
+            </SheetTitle>
+            <SheetDescription>
+              {editingDebt
+                ? 'Update your debt information and payment details.'
+                : 'Enter your debt details to start tracking payments and payoff timeline.'}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6">
             <DebtForm
               busy={actions.isWorking}
               defaultCurrency={currencyView}
@@ -1648,134 +2214,9 @@ function DebtsView({
               }}
             />
           </div>
-        ) : null}
+        </SheetContent>
+      </Sheet>
 
-        <div>
-          {debtScope.length ? (
-            debtScope.map((debt) => (
-              <div
-                key={debt.id}
-                className="flex flex-col gap-2 border-b border-[var(--border)] px-3 py-2.5 last:border-b-0 sm:px-3.5 md:flex-row md:items-center"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-medium text-[var(--foreground)]">
-                      {debt.name}
-                    </p>
-                    <span className="text-[10px] uppercase tracking-[0.1em] text-[var(--foreground-faint)]">
-                      {debt.rate > 0
-                        ? `${debt.rate.toFixed(1)}% interest`
-                        : 'No interest'}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-xs text-[var(--foreground-soft)]">
-                    {debt.lender}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3 md:justify-end">
-                  <div className="text-left md:text-right">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--foreground-faint)]">
-                      Monthly
-                    </p>
-                    <p className="font-mono text-xs text-[var(--foreground)]">
-                      {formatCurrency(debt.minPayment, debt.currency)}
-                    </p>
-                  </div>
-                  <div className="text-left md:text-right">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--foreground-faint)]">
-                      Balance
-                    </p>
-                    <p className="font-mono text-xs text-[var(--foreground)]">
-                      {formatCurrency(debt.balance, debt.currency)}
-                    </p>
-                  </div>
-                  <div className="text-left md:text-right">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--foreground-faint)]">
-                      Due
-                    </p>
-                    <p className="text-xs text-[var(--foreground)]">
-                      {formatDate(debt.dueDate)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      className="h-7 w-7"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => openEditDebtForm(debt.id)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      className="h-7 w-7"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() =>
-                        void actions.removeItem({ kind: 'debts', id: debt.id })
-                      }
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="px-3 py-8 text-center text-xs text-[var(--foreground-soft)] sm:px-3.5">
-              No debts in {currencyView}. Click{' '}
-              <span className="text-[var(--foreground)]">New</span> to add one.
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="mt-3 rounded-[1.1rem] border border-[var(--border)] bg-[var(--panel)]">
-        <div className="border-b border-[var(--border)] px-3 py-2 sm:px-3.5">
-          <h2 className="text-sm font-semibold tracking-tight text-[var(--foreground)]">
-            Monthly payments
-          </h2>
-          <p className="mt-0.5 text-xs text-[var(--foreground-soft)]">
-            Month-by-month plan ({currencyView})
-          </p>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Month</TableHead>
-              <TableHead className="text-right">Pay</TableHead>
-              <TableHead className="text-right">Interest</TableHead>
-              <TableHead className="text-right">Principal</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {monthlyPlan.length ? (
-              monthlyPlan.slice(0, 18).map((row) => (
-                <TableRow key={row.monthIndex}>
-                  <TableCell className="text-xs text-[var(--foreground-soft)]">
-                    {row.label}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-xs">
-                    {formatCurrency(row.totalPayment, currencyView)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-xs text-[var(--warning)]">
-                    {formatCurrency(row.interest, currencyView)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-xs text-[var(--success)]">
-                    {formatCurrency(row.principal, currencyView)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-xs">
-                    {formatCurrency(row.endingBalance, currencyView)}
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <EmptyRow colSpan={5} message="No monthly plan yet." />
-            )}
-          </TableBody>
-        </Table>
-      </section>
     </main>
   )
 }
@@ -1837,9 +2278,9 @@ function IncomesView({
           value={
             incomes.length
               ? formatCurrency(
-                  Math.max(...incomes.map((income) => income.amount)),
-                  currency,
-                )
+                Math.max(...incomes.map((income) => income.amount)),
+                currency,
+              )
               : '--'
           }
           note="The highest single payout currently on file."

@@ -24,7 +24,7 @@ export interface Debt {
   currency: string
   balance: number
   rate: number
-  minPayment: number
+  payments: number
   dueDate: string
   createdAt: string
 }
@@ -65,11 +65,22 @@ export interface DashboardSettings {
   lastUpdated: string
 }
 
+export interface RecurringPayment {
+  id: string
+  name: string
+  category: string
+  amount: number
+  currency: string
+  dueDay: number
+  createdAt: string
+}
+
 export interface DashboardData {
   debts: Debt[]
   incomes: Income[]
   investments: Investment[]
   goals: Goal[]
+  recurringPayments: RecurringPayment[]
   settings: DashboardSettings
 }
 
@@ -90,6 +101,15 @@ export interface DebtProjectionPoint {
   balance: number
 }
 
+export interface DebtMonthPlanItem {
+  id: string
+  name: string
+  payment: number
+  interest: number
+  principal: number
+  endingBalance: number
+}
+
 export interface DebtMonthPlanRow {
   monthIndex: number
   label: string
@@ -97,6 +117,7 @@ export interface DebtMonthPlanRow {
   interest: number
   principal: number
   endingBalance: number
+  debts: DebtMonthPlanItem[]
 }
 
 export type FinanceCollection = keyof Pick<
@@ -128,7 +149,7 @@ const seedData: DashboardData = {
       currency: 'USD',
       balance: 6200,
       rate: 27.9,
-      minPayment: 260,
+      payments: 24,
       dueDate: '2026-03-21',
       createdAt: '2026-03-03T09:00:00.000Z',
     },
@@ -140,7 +161,7 @@ const seedData: DashboardData = {
       currency: 'USD',
       balance: 11850,
       rate: 6.4,
-      minPayment: 340,
+      payments: 36,
       dueDate: '2026-03-28',
       createdAt: '2026-02-11T09:00:00.000Z',
     },
@@ -152,9 +173,185 @@ const seedData: DashboardData = {
       currency: 'USD',
       balance: 9300,
       rate: 4.1,
-      minPayment: 190,
+      payments: 48,
       dueDate: '2026-04-06',
       createdAt: '2026-01-16T09:00:00.000Z',
+    },
+    {
+      id: 'debt-mastercard',
+      name: 'Mastercard',
+      lender: 'Chase Bank',
+      type: 'Credit card',
+      currency: 'USD',
+      balance: 3450,
+      rate: 24.5,
+      payments: 18,
+      dueDate: '2026-03-15',
+      createdAt: '2026-02-28T09:00:00.000Z',
+    },
+    {
+      id: 'debt-personal',
+      name: 'Personal loan',
+      lender: 'Family member',
+      type: 'Other',
+      currency: 'USD',
+      balance: 2800,
+      rate: 0,
+      payments: 12,
+      dueDate: '2026-03-30',
+      createdAt: '2026-02-15T09:00:00.000Z',
+    },
+    {
+      id: 'debt-amex',
+      name: 'Amex Gold',
+      lender: 'American Express',
+      type: 'Credit card',
+      currency: 'USD',
+      balance: 1890,
+      rate: 22.8,
+      payments: 12,
+      dueDate: '2026-03-25',
+      createdAt: '2026-02-22T09:00:00.000Z',
+    },
+    {
+      id: 'debt-medical',
+      name: 'Medical bill',
+      lender: 'Hospital',
+      type: 'Other',
+      currency: 'USD',
+      balance: 4200,
+      rate: 0,
+      payments: 24,
+      dueDate: '2026-04-01',
+      createdAt: '2026-01-30T09:00:00.000Z',
+    },
+    {
+      id: 'debt-discover',
+      name: 'Discover card',
+      lender: 'Discover',
+      type: 'Credit card',
+      currency: 'USD',
+      balance: 2150,
+      rate: 19.9,
+      payments: 15,
+      dueDate: '2026-03-18',
+      createdAt: '2026-02-10T09:00:00.000Z',
+    },
+    {
+      id: 'debt-furniture',
+      name: 'Furniture financing',
+      lender: 'Retail Store',
+      type: 'Loan',
+      currency: 'USD',
+      balance: 1650,
+      rate: 0,
+      payments: 10,
+      dueDate: '2026-03-28',
+      createdAt: '2026-02-25T09:00:00.000Z',
+    },
+    {
+      id: 'debt-laptop',
+      name: 'Laptop payment plan',
+      lender: 'Tech Store',
+      type: 'Other',
+      currency: 'USD',
+      balance: 980,
+      rate: 0,
+      payments: 6,
+      dueDate: '2026-03-20',
+      createdAt: '2026-03-01T09:00:00.000Z',
+    },
+  ],
+  recurringPayments: [
+    {
+      id: 'recurring-netflix',
+      name: 'Netflix',
+      category: 'Subscription',
+      amount: 15.99,
+      currency: 'USD',
+      dueDay: 5,
+      createdAt: '2026-01-15T09:00:00.000Z',
+    },
+    {
+      id: 'recurring-spotify',
+      name: 'Spotify',
+      category: 'Subscription',
+      amount: 10.99,
+      currency: 'USD',
+      dueDay: 10,
+      createdAt: '2026-01-20T09:00:00.000Z',
+    },
+    {
+      id: 'recurring-gym',
+      name: 'Gym membership',
+      category: 'Health',
+      amount: 45.00,
+      currency: 'USD',
+      dueDay: 1,
+      createdAt: '2026-01-10T09:00:00.000Z',
+    },
+    {
+      id: 'recurring-internet',
+      name: 'Internet',
+      category: 'Utilities',
+      amount: 79.99,
+      currency: 'USD',
+      dueDay: 15,
+      createdAt: '2026-01-05T09:00:00.000Z',
+    },
+    {
+      id: 'recurring-phone',
+      name: 'Phone plan',
+      category: 'Utilities',
+      amount: 65.00,
+      currency: 'USD',
+      dueDay: 20,
+      createdAt: '2026-01-08T09:00:00.000Z',
+    },
+    {
+      id: 'recurring-icloud',
+      name: 'iCloud storage',
+      category: 'Subscription',
+      amount: 2.99,
+      currency: 'USD',
+      dueDay: 12,
+      createdAt: '2026-01-25T09:00:00.000Z',
+    },
+    {
+      id: 'recurring-insurance',
+      name: 'Car insurance',
+      category: 'Insurance',
+      amount: 125.00,
+      currency: 'USD',
+      dueDay: 1,
+      createdAt: '2026-01-03T09:00:00.000Z',
+    },
+    {
+      id: 'recurring-dropbox',
+      name: 'Dropbox',
+      category: 'Subscription',
+      amount: 11.99,
+      currency: 'USD',
+      dueDay: 8,
+      createdAt: '2026-02-01T09:00:00.000Z',
+    },
+    {
+      id: 'recurring-amazon',
+      name: 'Amazon Prime',
+      category: 'Subscription',
+      amount: 14.99,
+      currency: 'USD',
+      dueDay: 25,
+      createdAt: '2026-01-12T09:00:00.000Z',
+    },
+    {
+      id: 'recurring-hulu',
+      name: 'Hulu',
+      category: 'Subscription',
+      amount: 7.99,
+      currency: 'USD',
+      dueDay: 18,
+      createdAt: '2026-02-05T09:00:00.000Z',
     },
   ],
   incomes: [
@@ -268,6 +465,7 @@ function emptyDashboardData(currency = 'USD'): DashboardData {
     incomes: [],
     investments: [],
     goals: [],
+    recurringPayments: [],
     settings: {
       currency,
       lastUpdated: new Date().toISOString(),
@@ -287,18 +485,25 @@ function normalizeDashboardData(input: unknown): DashboardData {
   return {
     debts: Array.isArray(value.debts)
       ? value.debts.map((debt) => ({
-          ...debt,
-          currency:
-            typeof debt.currency === 'string' && debt.currency
-              ? debt.currency
-              : fallback.settings.currency,
-        }))
+        ...debt,
+        currency:
+          typeof debt.currency === 'string' && debt.currency
+            ? debt.currency
+            : fallback.settings.currency,
+        payments:
+          typeof (debt as any).payments === 'number'
+            ? (debt as any).payments
+            : 1,
+      }))
       : fallback.debts,
     incomes: Array.isArray(value.incomes) ? value.incomes : fallback.incomes,
     investments: Array.isArray(value.investments)
       ? value.investments
       : fallback.investments,
     goals: Array.isArray(value.goals) ? value.goals : fallback.goals,
+    recurringPayments: Array.isArray(value.recurringPayments)
+      ? value.recurringPayments
+      : fallback.recurringPayments,
     settings: {
       currency:
         typeof value.settings?.currency === 'string'
@@ -465,9 +670,9 @@ export function useFinanceActions() {
         debts: current.debts.map((debt) =>
           debt.id === id
             ? {
-                ...debt,
-                ...value,
-              }
+              ...debt,
+              ...value,
+            }
             : debt,
         ),
       }))
@@ -564,6 +769,10 @@ export function getMonthlyIncomeAmount(income: Income) {
   }
 }
 
+export function getDebtMonthlyPayment(balance: number, payments: number) {
+  return balance / Math.max(1, payments)
+}
+
 export function getDashboardSummary(data: DashboardData) {
   const totalDebt = data.debts.reduce((sum, debt) => sum + debt.balance, 0)
   const monthlyIncome = data.incomes.reduce(
@@ -580,7 +789,7 @@ export function getDashboardSummary(data: DashboardData) {
   )
   const totalGoalTarget = data.goals.reduce((sum, goal) => sum + goal.target, 0)
   const totalMinimums = data.debts.reduce(
-    (sum, debt) => sum + debt.minPayment,
+    (sum, debt) => sum + getDebtMonthlyPayment(debt.balance, debt.payments),
     0,
   )
   const monthlyInvesting = data.investments.reduce(
@@ -608,7 +817,7 @@ export function getDebtMonthlyTotalsByCurrency(debts: Debt[]) {
 
   debts.forEach((debt) => {
     const current = totals.get(debt.currency) ?? 0
-    totals.set(debt.currency, current + debt.minPayment)
+    totals.set(debt.currency, current + getDebtMonthlyPayment(debt.balance, debt.payments))
   })
 
   return [...totals.entries()]
@@ -709,7 +918,8 @@ export function getDebtProjection(
     .map((debt) => ({
       balance: debt.balance,
       rate: debt.rate / 100 / 12,
-      minPayment: debt.minPayment,
+      payments: debt.payments,
+      monthlyPrincipal: getDebtMonthlyPayment(debt.balance, debt.payments),
     }))
 
   if (!activeDebts.length) {
@@ -734,13 +944,8 @@ export function getDebtProjection(
       }
 
       const interest = debt.balance * debt.rate
-      const safeMinimum = Math.max(debt.minPayment, 0)
-      const payment = Math.min(
-        debt.balance + interest,
-        safeMinimum > interest
-          ? safeMinimum
-          : interest + Math.min(25, debt.balance),
-      )
+      const expectedPayment = debt.monthlyPrincipal + interest
+      const payment = Math.min(debt.balance + interest, expectedPayment)
 
       debt.balance = Math.max(debt.balance + interest - payment, 0)
     })
@@ -772,9 +977,11 @@ export function getDebtMonthlyPlan(
     .filter((debt) => debt.balance > 0)
     .map((debt) => ({
       id: debt.id,
+      name: debt.name,
       balance: debt.balance,
       rate: debt.rate / 100 / 12,
-      minPayment: debt.minPayment,
+      payments: debt.payments,
+      monthlyPrincipal: getDebtMonthlyPayment(debt.balance, debt.payments),
     }))
 
   if (!activeDebts.length) {
@@ -792,10 +999,8 @@ export function getDebtMonthlyPlan(
       .map((debt) => {
         const interest = debt.balance * debt.rate
         const balanceWithInterest = debt.balance + interest
-        const minDue = Math.min(
-          Math.max(debt.minPayment, 0),
-          balanceWithInterest,
-        )
+        const expectedPayment = debt.monthlyPrincipal + interest
+        const minDue = Math.min(expectedPayment, balanceWithInterest)
 
         return {
           ...debt,
@@ -854,19 +1059,32 @@ export function getDebtMonthlyPlan(
       0,
     )
 
+    const items = monthState.map(state => {
+      const debt = activeDebts.find(d => d.id === state.id)
+      return {
+        id: state.id,
+        name: state.name || state.id,
+        payment: state.payment,
+        interest: state.interest,
+        principal: Math.max(state.payment - state.interest, 0),
+        endingBalance: debt?.balance || 0,
+      }
+    })
+
     rows.push({
       monthIndex,
       label:
         monthIndex === 0
           ? 'This month'
           : pointDate.toLocaleDateString('en-US', {
-              month: 'short',
-              year: '2-digit',
-            }),
+            month: 'short',
+            year: '2-digit',
+          }),
       totalPayment,
       interest,
       principal: Math.max(totalPayment - interest, 0),
       endingBalance,
+      debts: items,
     })
 
     if (endingBalance <= 0) {
