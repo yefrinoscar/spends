@@ -133,6 +133,12 @@ const plugins = isTest
           wrangler: {
             compatibility_date: '2024-09-19',
             name: 'trytrack',
+            observability: {
+              logs: {
+                enabled: false,
+                invocation_logs: true,
+              },
+            },
           },
         },
         rollupConfig: { external: [/^@sentry\//] },
