@@ -42,7 +42,9 @@ export default function Header() {
                   to={item.to}
                   activeOptions={item.to === '/' ? { exact: true } : undefined}
                   className="sidebar-link"
-                  activeProps={{ className: 'sidebar-link sidebar-link-active' }}
+                  activeProps={{
+                    className: 'sidebar-link sidebar-link-active',
+                  }}
                 >
                   <Icon className="h-4 w-4" />
                   <span>{item.label}</span>

@@ -24,8 +24,8 @@ import {
   MetricCard,
   PageIntro,
   SectionTitle,
-  type FinanceActions,
 } from '@/features/finance/shared'
+import type { FinanceActions } from '@/features/finance/shared'
 import {
   formatCurrency,
   formatPercent,

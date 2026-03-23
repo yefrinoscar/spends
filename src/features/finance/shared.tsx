@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { WalletCards } from 'lucide-react'
+import type { WalletCards } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'

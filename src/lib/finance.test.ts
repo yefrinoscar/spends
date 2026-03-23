@@ -1,11 +1,18 @@
-import { describe, expect, it } from 'vitest'
-import {
+import { describe, expect, it, vi } from 'vite-plus/test'
+import type { DashboardData, Income } from './finance'
+
+vi.mock('@tanstack/react-query', () => ({
+  useMutation: vi.fn(),
+  useQuery: vi.fn(),
+  useQueryClient: vi.fn(),
+}))
+
+const {
   formatCurrency,
   getDashboardSummary,
   getDebtProjection,
   getMonthlyIncomeAmount,
-} from './finance'
-import type { DashboardData, Income } from './finance'
+} = await import('./finance')
 
 const dashboardFixture: DashboardData = {
   debts: [

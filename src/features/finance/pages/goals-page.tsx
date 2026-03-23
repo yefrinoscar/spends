@@ -16,9 +16,9 @@ import {
   MetricCard,
   PageIntro,
   SectionTitle,
-  type FinanceActions,
   sortByDateAscending,
 } from '@/features/finance/shared'
+import type { FinanceActions } from '@/features/finance/shared'
 import { formatCurrency, formatDate, getSoonestDate } from '@/lib/finance'
 import type { DashboardData } from '@/lib/finance'
 

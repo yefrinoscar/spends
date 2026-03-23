@@ -15,8 +15,8 @@ import {
   FinancePageState,
   MetricCard,
   PageIntro,
-  type FinanceActions,
 } from '@/features/finance/shared'
+import type { FinanceActions } from '@/features/finance/shared'
 import { formatCurrency, formatDate, getDashboardSummary } from '@/lib/finance'
 import type { DashboardData } from '@/lib/finance'
 

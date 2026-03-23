@@ -1,4 +1,9 @@
-import { ArrowDownToLine, CalendarClock, CircleDollarSign, Trash2 } from 'lucide-react'
+import {
+  ArrowDownToLine,
+  CalendarClock,
+  CircleDollarSign,
+  Trash2,
+} from 'lucide-react'
 import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -24,9 +29,9 @@ import {
   MetricCard,
   PageIntro,
   SectionTitle,
-  type FinanceActions,
   sortByDateAscending,
 } from '@/features/finance/shared'
+import type { FinanceActions } from '@/features/finance/shared'
 import {
   formatCurrency,
   formatDate,

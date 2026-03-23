@@ -21,16 +21,15 @@ import {
   AnimatedCurrencyValue,
   DebtProjectionChart,
   FinancePageState,
-  type FinanceActions,
   sortByDateAscending,
 } from '@/features/finance/shared'
+import type { FinanceActions } from '@/features/finance/shared'
 import {
   formatCurrency,
   getDebtMonthlyPayment,
   getDebtProjection,
-  type RecurringPayment,
 } from '@/lib/finance'
-import type { DashboardData } from '@/lib/finance'
+import type { DashboardData, RecurringPayment } from '@/lib/finance'
 
 export function DebtsPage() {
   return (
@@ -85,12 +84,17 @@ function DebtsView({
         }
 
         return (
-          new Date(left.startDate).getTime() - new Date(right.startDate).getTime()
+          new Date(left.startDate).getTime() -
+          new Date(right.startDate).getTime()
         )
       })
 
-    const active = recurringPayments.filter((payment) => payment.status === 'active')
-    const paused = recurringPayments.filter((payment) => payment.status === 'paused')
+    const active = recurringPayments.filter(
+      (payment) => payment.status === 'active',
+    )
+    const paused = recurringPayments.filter(
+      (payment) => payment.status === 'paused',
+    )
     const cancelled = recurringPayments.filter(
       (payment) => payment.status === 'cancelled',
     )
