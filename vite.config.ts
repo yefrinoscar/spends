@@ -131,7 +131,7 @@ const plugins = isTest
           deployConfig: true,
           nodeCompat: true,
           wrangler: {
-            compatibility_date: '2024-09-19',
+            compatibility_date: '2026-03-19',
             name: 'trytrack',
             observability: {
               logs: {
