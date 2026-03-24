@@ -8,6 +8,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import Header from '../components/Header'
 
 import TanStackQueryProvider from '../integrations/tanstack-query/root-provider'
+import { ConvexClientProvider } from '../integrations/convex'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
@@ -51,26 +52,28 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="font-sans antialiased [overflow-wrap:anywhere]">
         <TanStackQueryProvider>
-          <div className="mx-auto flex min-h-screen w-full max-w-[1320px] flex-col">
-            <div className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[180px_minmax(0,1fr)]">
-              <Header />
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                {children}
+          <ConvexClientProvider>
+            <div className="mx-auto flex min-h-screen w-full max-w-[1320px] flex-col">
+              <div className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[180px_minmax(0,1fr)]">
+                <Header />
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                  {children}
+                </div>
               </div>
             </div>
-          </div>
-          <TanStackDevtools
-            config={{
-              position: 'bottom-right',
-            }}
-            plugins={[
-              {
-                name: 'Tanstack Router',
-                render: <TanStackRouterDevtoolsPanel />,
-              },
-              TanStackQueryDevtools,
-            ]}
-          />
+            <TanStackDevtools
+              config={{
+                position: 'bottom-right',
+              }}
+              plugins={[
+                {
+                  name: 'Tanstack Router',
+                  render: <TanStackRouterDevtoolsPanel />,
+                },
+                TanStackQueryDevtools,
+              ]}
+            />
+          </ConvexClientProvider>
         </TanStackQueryProvider>
         <Scripts />
       </body>

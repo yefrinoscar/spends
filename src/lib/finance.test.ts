@@ -9,8 +9,10 @@ vi.mock('@tanstack/react-query', () => ({
 
 const {
   formatCurrency,
+  getDebtPlannedPayment,
   getDashboardSummary,
   getDebtProjection,
+  getMonthlySpendSummary,
   getMonthlyIncomeAmount,
 } = await import('./finance')
 
@@ -25,8 +27,20 @@ const dashboardFixture: DashboardData = {
       balance: 500,
       rate: 20,
       payments: 12.5,
+      minimumPayment: 55,
       dueDate: '2026-03-20',
       createdAt: '2026-03-01T00:00:00.000Z',
+    },
+  ],
+  expenses: [
+    {
+      id: 'expense-1',
+      amount: 25,
+      currency: 'USD',
+      category: 'Food',
+      description: 'Lunch',
+      spentAt: '2026-03-15',
+      createdAt: '2026-03-15T00:00:00.000Z',
     },
   ],
   incomes: [
@@ -92,7 +106,7 @@ describe('finance helpers', () => {
     expect(summary.monthlyIncome).toBe(3000)
     expect(summary.totalInvestments).toBe(1200)
     expect(summary.goalProgress).toBe(25)
-    expect(summary.freeCash).toBe(2860)
+    expect(summary.freeCash).toBe(2845)
   })
 
   it('formats currency consistently', () => {
@@ -107,5 +121,46 @@ describe('finance helpers', () => {
 
     expect(projection[0]?.balance).toBe(500)
     expect(projection.at(-1)?.balance).toBeLessThan(500)
+  })
+
+  it('prefers target and minimum payments for debt planning', () => {
+    expect(getDebtPlannedPayment(dashboardFixture.debts[0]!)).toBe(55)
+    expect(
+      getDebtPlannedPayment({
+        balance: 800,
+        payments: 8,
+        minimumPayment: 40,
+        targetPayment: 100,
+      }),
+    ).toBe(100)
+  })
+
+  it('builds a monthly spend summary across debts, recurring, and expenses', () => {
+    const summary = getMonthlySpendSummary(
+      {
+        ...dashboardFixture,
+        recurringPayments: [
+          {
+            id: 'recurring-1',
+            name: 'Netflix',
+            category: 'Subscription',
+            amount: 20,
+            currency: 'USD',
+            dueDay: 12,
+            status: 'active',
+            startDate: '2026-01-01',
+            createdAt: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+      '2026-03',
+      'USD',
+    )
+
+    expect(summary.plannedDebtPayments).toBe(55)
+    expect(summary.plannedRecurringPayments).toBe(20)
+    expect(summary.actualExpenses).toBe(25)
+    expect(summary.totalMonthlySpend).toBe(100)
+    expect(summary.byCurrency[0]?.currency).toBe('USD')
   })
 })

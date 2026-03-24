@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useConvex } from 'convex/react'
+import { api } from '../../convex/_generated/api'
+import type { Doc, Id } from '../../convex/_generated/dataModel'
 
 export type DebtType = 'Credit card' | 'Loan' | 'Mortgage' | 'Other'
+export type DebtPaymentMode = 'installments' | 'revolving'
+export type DebtStatus = 'active' | 'closed'
 export type IncomeFrequency =
   | 'Weekly'
   | 'Biweekly'
@@ -25,8 +30,27 @@ export interface Debt {
   balance: number
   rate: number
   payments: number
+  paymentMode?: DebtPaymentMode
+  remainingInstallments?: number
+  minimumPayment?: number
+  targetPayment?: number
+  dueDay?: number
   dueDate: string
+  status?: DebtStatus
   createdAt: string
+  updatedAt?: string
+}
+
+export interface Expense {
+  id: string
+  amount: number
+  currency: string
+  category: string
+  description: string
+  merchant?: string
+  spentAt: string
+  createdAt: string
+  updatedAt?: string
 }
 
 export interface Income {
@@ -73,14 +97,18 @@ export interface RecurringPayment {
   category: string
   amount: number
   currency: string
+  cadence?: 'monthly'
   dueDay: number
   status: RecurringPaymentStatus
   startDate: string
+  endDate?: string
   createdAt: string
+  updatedAt?: string
 }
 
 export interface DashboardData {
   debts: Debt[]
+  expenses: Expense[]
   incomes: Income[]
   investments: Investment[]
   goals: Goal[]
@@ -124,13 +152,33 @@ export interface DebtMonthPlanRow {
   debts: DebtMonthPlanItem[]
 }
 
+export interface MonthlySpendCurrencySummary {
+  currency: string
+  plannedDebtPayments: number
+  plannedRecurringPayments: number
+  actualExpenses: number
+  totalMonthlySpend: number
+}
+
+export interface MonthlySpendSummary {
+  month: string
+  plannedDebtPayments: number
+  plannedRecurringPayments: number
+  actualExpenses: number
+  totalMonthlySpend: number
+  byCurrency: MonthlySpendCurrencySummary[]
+  upcomingDebts: Debt[]
+  upcomingRecurringPayments: RecurringPayment[]
+}
+
 export type FinanceCollection = keyof Pick<
   DashboardData,
-  'debts' | 'incomes' | 'investments' | 'goals'
+  'debts' | 'expenses' | 'incomes' | 'investments' | 'goals'
 >
 
 export type CreateItemInput =
   | { kind: 'debts'; value: Omit<Debt, 'id' | 'createdAt'> }
+  | { kind: 'expenses'; value: Omit<Expense, 'id' | 'createdAt'> }
   | { kind: 'incomes'; value: Omit<Income, 'id' | 'createdAt'> }
   | { kind: 'investments'; value: Omit<Investment, 'id' | 'createdAt'> }
   | { kind: 'goals'; value: Omit<Goal, 'id' | 'createdAt'> }
@@ -152,6 +200,119 @@ export interface UpdateRecurringPaymentInput {
 
 const STORAGE_KEY = 'spends.sh:dashboard:v1'
 const DASHBOARD_QUERY_KEY = ['finance-dashboard'] as const
+const CONVEX_USER_STORAGE_KEY = 'spends.sh:convex-user-email'
+
+type ConvexDebtDoc = Doc<'debts'>
+
+function getOrCreateConvexUserEmail() {
+  if (typeof window === 'undefined') {
+    return 'server-preview@spends.local'
+  }
+
+  const existing = window.localStorage.getItem(CONVEX_USER_STORAGE_KEY)
+
+  if (existing) {
+    return existing
+  }
+
+  const generated = `local-${crypto.randomUUID()}@spends.local`
+  window.localStorage.setItem(CONVEX_USER_STORAGE_KEY, generated)
+  return generated
+}
+
+async function getOrCreateConvexUser(
+  convex: ReturnType<typeof useConvex>,
+  currency = 'USD',
+) {
+  const email = getOrCreateConvexUserEmail()
+  const existing = await convex.query(api.users.getByEmail, { email })
+
+  if (existing) {
+    return existing
+  }
+
+  await convex.mutation(api.users.create, {
+    email,
+    name: 'Local spends user',
+    currency,
+  })
+
+  const created = await convex.query(api.users.getByEmail, { email })
+
+  if (!created) {
+    throw new Error('Unable to create Convex user')
+  }
+
+  return created
+}
+
+function toDebtMutationValue(value: Omit<Debt, 'id' | 'createdAt'>) {
+  return {
+    name: value.name,
+    lender: value.lender,
+    type: value.type,
+    currency: value.currency,
+    balance: value.balance,
+    rate: value.rate,
+    payments: value.payments,
+    ...(value.paymentMode ? { paymentMode: value.paymentMode } : {}),
+    ...(typeof value.remainingInstallments === 'number'
+      ? { remainingInstallments: value.remainingInstallments }
+      : {}),
+    ...(typeof value.minimumPayment === 'number'
+      ? { minimumPayment: value.minimumPayment }
+      : {}),
+    ...(typeof value.targetPayment === 'number'
+      ? { targetPayment: value.targetPayment }
+      : {}),
+    ...(typeof value.dueDay === 'number' ? { dueDay: value.dueDay } : {}),
+    dueDate: value.dueDate,
+    status: value.status ?? 'active',
+  }
+}
+
+function toDebt(value: ConvexDebtDoc): Debt {
+  return {
+    id: value._id,
+    name: value.name,
+    lender: value.lender,
+    type: value.type,
+    currency: value.currency,
+    balance: value.balance,
+    rate: value.rate,
+    payments: value.payments,
+    paymentMode: value.paymentMode,
+    remainingInstallments: value.remainingInstallments,
+    minimumPayment: value.minimumPayment,
+    targetPayment: value.targetPayment,
+    dueDay: value.dueDay,
+    dueDate: value.dueDate,
+    status: value.status,
+    createdAt: new Date(value.createdAt).toISOString(),
+    updatedAt: new Date(value.updatedAt).toISOString(),
+  }
+}
+
+async function replaceConvexDebts(
+  convex: ReturnType<typeof useConvex>,
+  userId: Id<'users'>,
+  debts: Debt[],
+) {
+  const existing = await convex.query(api.debts.listByUser, { userId })
+
+  await Promise.all(
+    existing.map((debt) => convex.mutation(api.debts.remove, { id: debt._id })),
+  )
+
+  await Promise.all(
+    debts.map((debt) =>
+      convex.mutation(api.debts.create, {
+        userId,
+        ...toDebtMutationValue(debt),
+      }),
+    ),
+  )
+}
 
 const seedData: DashboardData = {
   debts: [
@@ -276,6 +437,7 @@ const seedData: DashboardData = {
       createdAt: '2026-03-01T09:00:00.000Z',
     },
   ],
+  expenses: [],
   recurringPayments: [
     {
       id: 'recurring-netflix',
@@ -485,6 +647,7 @@ const seedData: DashboardData = {
 }
 
 const seedDebtIds = new Set(seedData.debts.map((item) => item.id))
+const seedExpenseIds = new Set(seedData.expenses.map((item) => item.id))
 const seedIncomeIds = new Set(seedData.incomes.map((item) => item.id))
 const seedInvestmentIds = new Set(seedData.investments.map((item) => item.id))
 const seedGoalIds = new Set(seedData.goals.map((item) => item.id))
@@ -496,6 +659,7 @@ function cloneDashboardData(data: DashboardData): DashboardData {
 function emptyDashboardData(currency = 'USD'): DashboardData {
   return {
     debts: [],
+    expenses: [],
     incomes: [],
     investments: [],
     goals: [],
@@ -528,8 +692,49 @@ function normalizeDashboardData(input: unknown): DashboardData {
             typeof (debt as any).payments === 'number'
               ? (debt as any).payments
               : 1,
+          paymentMode:
+            debt.paymentMode === 'revolving' ||
+            debt.paymentMode === 'installments'
+              ? debt.paymentMode
+              : debt.type === 'Credit card'
+                ? 'revolving'
+                : 'installments',
+          remainingInstallments:
+            typeof debt.remainingInstallments === 'number'
+              ? debt.remainingInstallments
+              : typeof (debt as any).payments === 'number'
+                ? Math.max(1, Math.round((debt as any).payments))
+                : 1,
+          dueDay:
+            typeof debt.dueDay === 'number'
+              ? Math.max(1, Math.min(31, Math.round(debt.dueDay)))
+              : new Date(`${debt.dueDate}T00:00:00`).getDate() || 1,
+          status: debt.status === 'closed' ? 'closed' : 'active',
+          updatedAt:
+            typeof debt.updatedAt === 'string'
+              ? debt.updatedAt
+              : debt.createdAt,
         }))
       : fallback.debts,
+    expenses: Array.isArray(value.expenses)
+      ? value.expenses.map((expense) => ({
+          ...expense,
+          currency:
+            typeof expense.currency === 'string' && expense.currency
+              ? expense.currency
+              : fallback.settings.currency,
+          spentAt:
+            typeof expense.spentAt === 'string' && expense.spentAt
+              ? expense.spentAt
+              : typeof expense.createdAt === 'string' && expense.createdAt
+                ? expense.createdAt.slice(0, 10)
+                : new Date().toISOString().slice(0, 10),
+          updatedAt:
+            typeof expense.updatedAt === 'string'
+              ? expense.updatedAt
+              : expense.createdAt,
+        }))
+      : fallback.expenses,
     incomes: Array.isArray(value.incomes) ? value.incomes : fallback.incomes,
     investments: Array.isArray(value.investments)
       ? value.investments
@@ -556,6 +761,13 @@ function normalizeDashboardData(input: unknown): DashboardData {
               : typeof payment.createdAt === 'string' && payment.createdAt
                 ? payment.createdAt.slice(0, 10)
                 : new Date().toISOString().slice(0, 10),
+          cadence: 'monthly',
+          updatedAt:
+            typeof payment.updatedAt === 'string'
+              ? payment.updatedAt
+              : typeof payment.createdAt === 'string'
+                ? payment.createdAt
+                : new Date().toISOString(),
         }))
       : fallback.recurringPayments,
     settings: {
@@ -624,9 +836,40 @@ function createId(prefix: string) {
 }
 
 export function useFinanceDashboard(enabled = true) {
+  const convex = useConvex()
+
   return useQuery({
     queryKey: DASHBOARD_QUERY_KEY,
-    queryFn: readDashboardData,
+    queryFn: async () => {
+      const localData = await readDashboardData()
+      const user = await getOrCreateConvexUser(
+        convex,
+        localData.settings.currency,
+      )
+      let convexDebts = await convex.query(api.debts.listByUser, {
+        userId: user._id,
+      })
+
+      if (!convexDebts.length && localData.debts.length) {
+        await Promise.all(
+          localData.debts.map((debt) =>
+            convex.mutation(api.debts.create, {
+              userId: user._id,
+              ...toDebtMutationValue(debt),
+            }),
+          ),
+        )
+
+        convexDebts = await convex.query(api.debts.listByUser, {
+          userId: user._id,
+        })
+      }
+
+      return {
+        ...localData,
+        debts: convexDebts.map(toDebt),
+      }
+    },
     enabled,
     staleTime: 0,
     gcTime: 1000 * 60 * 60,
@@ -635,6 +878,7 @@ export function useFinanceDashboard(enabled = true) {
 }
 
 export function useFinanceActions() {
+  const convex = useConvex()
   const queryClient = useQueryClient()
 
   const syncCache = (next: DashboardData) => {
@@ -643,20 +887,36 @@ export function useFinanceActions() {
 
   const createItemMutation = useMutation({
     mutationFn: async (input: CreateItemInput) => {
+      if (input.kind === 'debts') {
+        const localData = await readDashboardData()
+        const user = await getOrCreateConvexUser(
+          convex,
+          localData.settings.currency,
+        )
+
+        await convex.mutation(api.debts.create, {
+          userId: user._id,
+          ...toDebtMutationValue(input.value),
+        })
+
+        return null
+      }
+
       return updateDashboardData((current) => {
         const createdAt = new Date().toISOString()
 
         switch (input.kind) {
-          case 'debts':
+          case 'expenses':
             return {
               ...current,
-              debts: [
+              expenses: [
                 {
                   ...input.value,
-                  id: createId('debt'),
+                  id: createId('expense'),
                   createdAt,
+                  updatedAt: createdAt,
                 },
-                ...current.debts,
+                ...current.expenses,
               ],
             }
           case 'incomes':
@@ -698,7 +958,16 @@ export function useFinanceActions() {
         }
       })
     },
-    onSuccess: syncCache,
+    onSuccess: (next, input) => {
+      if (input.kind === 'debts') {
+        void queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
+        return
+      }
+
+      if (next) {
+        syncCache(next)
+      }
+    },
   })
 
   const removeItemMutation = useMutation({
@@ -709,29 +978,39 @@ export function useFinanceActions() {
       kind: FinanceCollection
       id: string
     }) => {
+      if (kind === 'debts') {
+        await convex.mutation(api.debts.remove, { id: id as Id<'debts'> })
+        return null
+      }
+
       return updateDashboardData((current) => ({
         ...current,
         [kind]: current[kind].filter((item) => item.id !== id),
       }))
     },
-    onSuccess: syncCache,
+    onSuccess: (next, { kind }) => {
+      if (kind === 'debts') {
+        void queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
+        return
+      }
+
+      if (next) {
+        syncCache(next)
+      }
+    },
   })
 
   const updateDebtMutation = useMutation({
     mutationFn: async ({ id, value }: UpdateDebtInput) => {
-      return updateDashboardData((current) => ({
-        ...current,
-        debts: current.debts.map((debt) =>
-          debt.id === id
-            ? {
-                ...debt,
-                ...value,
-              }
-            : debt,
-        ),
-      }))
+      await convex.mutation(api.debts.update, {
+        id: id as Id<'debts'>,
+        ...toDebtMutationValue(value),
+      })
+      return null
     },
-    onSuccess: syncCache,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
+    },
   })
 
   const createRecurringPaymentMutation = useMutation({
@@ -742,7 +1021,9 @@ export function useFinanceActions() {
           {
             ...input,
             id: createId('recurring'),
+            cadence: 'monthly',
             createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           },
           ...current.recurringPayments,
         ],
@@ -756,7 +1037,9 @@ export function useFinanceActions() {
       return updateDashboardData((current) => ({
         ...current,
         recurringPayments: current.recurringPayments.map((p) =>
-          p.id === id ? { ...p, ...value } : p,
+          p.id === id
+            ? { ...p, ...value, updatedAt: new Date().toISOString() }
+            : p,
         ),
       }))
     },
@@ -788,16 +1071,28 @@ export function useFinanceActions() {
 
   const resetDemoDataMutation = useMutation({
     mutationFn: async () => {
-      return writeDashboardData(cloneDashboardData(seedData))
+      const next = cloneDashboardData(seedData)
+      const user = await getOrCreateConvexUser(convex, next.settings.currency)
+      await replaceConvexDebts(convex, user._id, next.debts)
+      return writeDashboardData(next)
     },
-    onSuccess: syncCache,
+    onSuccess: (next) => {
+      syncCache(next)
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
+    },
   })
 
   const clearDashboardMutation = useMutation({
     mutationFn: async (currency: string) => {
-      return writeDashboardData(emptyDashboardData(currency))
+      const next = emptyDashboardData(currency)
+      const user = await getOrCreateConvexUser(convex, currency)
+      await replaceConvexDebts(convex, user._id, [])
+      return writeDashboardData(next)
     },
-    onSuccess: syncCache,
+    onSuccess: (next) => {
+      syncCache(next)
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
+    },
   })
 
   return {
@@ -893,6 +1188,151 @@ export function getDebtMonthlyPayment(balance: number, payments: number) {
   return balance / Math.max(1, payments)
 }
 
+export function getDebtPlannedPayment(
+  debt: Pick<
+    Debt,
+    'balance' | 'payments' | 'minimumPayment' | 'targetPayment' | 'status'
+  >,
+) {
+  if (debt.status === 'closed') {
+    return 0
+  }
+
+  if (typeof debt.targetPayment === 'number' && debt.targetPayment > 0) {
+    return debt.targetPayment
+  }
+
+  if (typeof debt.minimumPayment === 'number' && debt.minimumPayment > 0) {
+    return debt.minimumPayment
+  }
+
+  return getDebtMonthlyPayment(debt.balance, debt.payments)
+}
+
+function getMonthRange(month: string) {
+  const [yearText, monthText] = month.split('-')
+  const year = Number(yearText)
+  const monthIndex = Number(monthText)
+
+  if (!Number.isInteger(year) || !Number.isInteger(monthIndex)) {
+    throw new Error('month must use YYYY-MM format')
+  }
+
+  const startDate = `${yearText}-${monthText}-01`
+  const endDate = new Date(Date.UTC(year, monthIndex, 0))
+    .toISOString()
+    .slice(0, 10)
+
+  return { startDate, endDate }
+}
+
+function isRecurringActiveInMonth(
+  payment: Pick<RecurringPayment, 'startDate'> & { endDate?: string },
+  startDate: string,
+  endDate: string,
+) {
+  return (
+    payment.startDate <= endDate &&
+    (!payment.endDate || payment.endDate >= startDate)
+  )
+}
+
+export function getMonthlySpendSummary(
+  data: DashboardData,
+  month: string,
+  currency?: string,
+): MonthlySpendSummary {
+  const { startDate, endDate } = getMonthRange(month)
+  const debtItems = data.debts.filter(
+    (debt) =>
+      debt.status !== 'closed' && (!currency || debt.currency === currency),
+  )
+  const recurringItems = data.recurringPayments.filter(
+    (payment) =>
+      payment.status === 'active' &&
+      (!currency || payment.currency === currency) &&
+      isRecurringActiveInMonth(payment, startDate, endDate),
+  )
+  const expenseItems = data.expenses.filter(
+    (expense) =>
+      expense.spentAt >= startDate &&
+      expense.spentAt <= endDate &&
+      (!currency || expense.currency === currency),
+  )
+
+  const plannedDebtPayments = debtItems.reduce(
+    (sum, debt) => sum + getDebtPlannedPayment(debt),
+    0,
+  )
+  const plannedRecurringPayments = recurringItems.reduce(
+    (sum, payment) => sum + payment.amount,
+    0,
+  )
+  const actualExpenses = expenseItems.reduce(
+    (sum, expense) => sum + expense.amount,
+    0,
+  )
+
+  const byCurrency = new Map<string, MonthlySpendCurrencySummary>()
+
+  for (const debt of debtItems) {
+    const current = byCurrency.get(debt.currency) ?? {
+      currency: debt.currency,
+      plannedDebtPayments: 0,
+      plannedRecurringPayments: 0,
+      actualExpenses: 0,
+      totalMonthlySpend: 0,
+    }
+    current.plannedDebtPayments += getDebtPlannedPayment(debt)
+    current.totalMonthlySpend += getDebtPlannedPayment(debt)
+    byCurrency.set(debt.currency, current)
+  }
+
+  for (const payment of recurringItems) {
+    const current = byCurrency.get(payment.currency) ?? {
+      currency: payment.currency,
+      plannedDebtPayments: 0,
+      plannedRecurringPayments: 0,
+      actualExpenses: 0,
+      totalMonthlySpend: 0,
+    }
+    current.plannedRecurringPayments += payment.amount
+    current.totalMonthlySpend += payment.amount
+    byCurrency.set(payment.currency, current)
+  }
+
+  for (const expense of expenseItems) {
+    const current = byCurrency.get(expense.currency) ?? {
+      currency: expense.currency,
+      plannedDebtPayments: 0,
+      plannedRecurringPayments: 0,
+      actualExpenses: 0,
+      totalMonthlySpend: 0,
+    }
+    current.actualExpenses += expense.amount
+    current.totalMonthlySpend += expense.amount
+    byCurrency.set(expense.currency, current)
+  }
+
+  return {
+    month,
+    plannedDebtPayments,
+    plannedRecurringPayments,
+    actualExpenses,
+    totalMonthlySpend:
+      plannedDebtPayments + plannedRecurringPayments + actualExpenses,
+    byCurrency: [...byCurrency.values()].sort((left, right) =>
+      left.currency.localeCompare(right.currency),
+    ),
+    upcomingDebts: debtItems
+      .filter((debt) => debt.dueDate >= startDate && debt.dueDate <= endDate)
+      .sort((left, right) => left.dueDate.localeCompare(right.dueDate)),
+    upcomingRecurringPayments: recurringItems
+      .slice()
+      .sort((left, right) => left.dueDay - right.dueDay),
+  }
+}
+
 export function getDashboardSummary(data: DashboardData) {
   const totalDebt = data.debts.reduce((sum, debt) => sum + debt.balance, 0)
   const monthlyIncome = data.incomes.reduce(
@@ -909,7 +1349,7 @@ export function getDashboardSummary(data: DashboardData) {
   )
   const totalGoalTarget = data.goals.reduce((sum, goal) => sum + goal.target, 0)
   const totalMinimums = data.debts.reduce(
-    (sum, debt) => sum + getDebtMonthlyPayment(debt.balance, debt.payments),
+    (sum, debt) => sum + getDebtPlannedPayment(debt),
     0,
   )
   const monthlyInvesting = data.investments.reduce(
@@ -937,10 +1377,7 @@ export function getDebtMonthlyTotalsByCurrency(debts: Debt[]) {
 
   debts.forEach((debt) => {
     const current = totals.get(debt.currency) ?? 0
-    totals.set(
-      debt.currency,
-      current + getDebtMonthlyPayment(debt.balance, debt.payments),
-    )
+    totals.set(debt.currency, current + getDebtPlannedPayment(debt))
   })
 
   return [...totals.entries()]
@@ -1021,10 +1458,12 @@ export function getAverageInvestmentChange(investments: Investment[]) {
 export function isSeedDataActive(data: DashboardData) {
   return (
     data.debts.length === seedData.debts.length &&
+    data.expenses.length === seedData.expenses.length &&
     data.incomes.length === seedData.incomes.length &&
     data.investments.length === seedData.investments.length &&
     data.goals.length === seedData.goals.length &&
     data.debts.every((item) => seedDebtIds.has(item.id)) &&
+    data.expenses.every((item) => seedExpenseIds.has(item.id)) &&
     data.incomes.every((item) => seedIncomeIds.has(item.id)) &&
     data.investments.every((item) => seedInvestmentIds.has(item.id)) &&
     data.goals.every((item) => seedGoalIds.has(item.id))
@@ -1037,12 +1476,12 @@ export function getDebtProjection(
   maxMonths = 72,
 ): DebtProjectionPoint[] {
   const activeDebts = debts
-    .filter((debt) => debt.balance > 0)
+    .filter((debt) => debt.balance > 0 && debt.status !== 'closed')
     .map((debt) => ({
       balance: debt.balance,
       rate: debt.rate / 100 / 12,
       payments: debt.payments,
-      monthlyPrincipal: getDebtMonthlyPayment(debt.balance, debt.payments),
+      monthlyPrincipal: getDebtPlannedPayment(debt),
     }))
 
   if (!activeDebts.length) {
@@ -1097,14 +1536,14 @@ export function getDebtMonthlyPlan(
   maxMonths = 72,
 ): DebtMonthPlanRow[] {
   const activeDebts = debts
-    .filter((debt) => debt.balance > 0)
+    .filter((debt) => debt.balance > 0 && debt.status !== 'closed')
     .map((debt) => ({
       id: debt.id,
       name: debt.name,
       balance: debt.balance,
       rate: debt.rate / 100 / 12,
       payments: debt.payments,
-      monthlyPrincipal: getDebtMonthlyPayment(debt.balance, debt.payments),
+      monthlyPrincipal: getDebtPlannedPayment(debt),
     }))
 
   if (!activeDebts.length) {

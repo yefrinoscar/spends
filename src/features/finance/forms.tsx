@@ -12,6 +12,11 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Select } from '@/components/ui/select'
+import {
+  InlineEdit,
+  InlineSelect,
+  InlineDateEdit,
+} from '@/components/ui/inline-edit'
 import type {
   Debt,
   DebtType,
@@ -25,6 +30,7 @@ import type {
   RecurringPaymentStatus,
 } from '@/lib/finance'
 import { Field, parseMoney } from '@/features/finance/shared'
+import { formatCurrency } from '@/lib/finance'
 
 export function RecurringPaymentForm({
   onSubmit,
@@ -358,6 +364,141 @@ export function DebtForm({
         dueDate: '',
       })
     }
+  }
+
+  const isEditMode = !!initialValue
+
+  const handleAutoSave = async () => {
+    if (!form.name.trim()) {
+      return
+    }
+
+    await onSubmit({
+      name: form.name.trim(),
+      lender: form.lender.trim() || 'Personal ledger',
+      type: form.type,
+      currency: form.currency,
+      balance: parseMoney(form.balance),
+      rate: parseMoney(form.rate),
+      payments: Math.max(1, Math.round(parseMoney(form.payments) || 1)),
+      dueDate: form.dueDate || new Date().toISOString().slice(0, 10),
+    })
+  }
+
+  if (isEditMode) {
+    return (
+      <div className="space-y-5 py-1">
+        <InlineEdit
+          label="Debt Name"
+          value={form.name}
+          placeholder="Mastercard balance"
+          displayValue={form.name}
+          onChange={(value) =>
+            setForm((current) => ({ ...current, name: value }))
+          }
+          onSave={handleAutoSave}
+        />
+
+        <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+          <InlineEdit
+            label="Lender"
+            value={form.lender}
+            placeholder="Bank or person"
+            displayValue={form.lender || 'Personal ledger'}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, lender: value }))
+            }
+            onSave={handleAutoSave}
+          />
+          <InlineSelect
+            label="Type"
+            value={form.type}
+            options={[
+              { value: 'Credit card', label: 'Credit card' },
+              { value: 'Loan', label: 'Loan' },
+              { value: 'Mortgage', label: 'Mortgage' },
+              { value: 'Other', label: 'Other' },
+            ]}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, type: value as DebtType }))
+            }
+            onSave={handleAutoSave}
+          />
+
+          <InlineEdit
+            label="Current Balance"
+            value={form.balance}
+            type="number"
+            inputMode="decimal"
+            placeholder="0.00"
+            displayValue={
+              form.balance
+                ? formatCurrency(parseMoney(form.balance), form.currency)
+                : 'Not set'
+            }
+            onChange={(value) =>
+              setForm((current) => ({ ...current, balance: value }))
+            }
+            onSave={handleAutoSave}
+          />
+          <InlineSelect
+            label="Currency"
+            value={form.currency}
+            options={[
+              { value: 'USD', label: 'USD' },
+              { value: 'PEN', label: 'PEN' },
+              { value: 'EUR', label: 'EUR' },
+              { value: 'GBP', label: 'GBP' },
+              { value: 'MXN', label: 'MXN' },
+              { value: 'COP', label: 'COP' },
+            ]}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, currency: value }))
+            }
+            onSave={handleAutoSave}
+          />
+
+          <InlineEdit
+            label="Interest Rate (APR)"
+            value={form.rate}
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            placeholder="0.0"
+            displayValue={form.rate ? `${form.rate}%` : 'Not set'}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, rate: value }))
+            }
+            onSave={handleAutoSave}
+          />
+          <InlineEdit
+            label="Installments"
+            value={form.payments}
+            type="number"
+            placeholder="1"
+            displayValue={`${form.payments} payment${Number(form.payments) !== 1 ? 's' : ''}`}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, payments: value }))
+            }
+            onSave={handleAutoSave}
+          />
+
+          <InlineDateEdit
+            label="Due Date"
+            value={form.dueDate}
+            displayValue={
+              form.dueDate
+                ? format(new Date(form.dueDate + 'T00:00:00'), 'PPP')
+                : 'Not set'
+            }
+            onChange={(value) =>
+              setForm((current) => ({ ...current, dueDate: value }))
+            }
+            onSave={handleAutoSave}
+          />
+        </div>
+      </div>
+    )
   }
 
   return (
