@@ -10,16 +10,16 @@ import { BrandLogo } from './brand-logo'
 
 const navItems = [
   { to: '/debts', label: 'Debt', icon: Landmark, disabled: false },
-  { to: '/incomes', label: 'Income', icon: CircleDollarSign, disabled: false },
+  { to: '/incomes', label: 'Income', icon: CircleDollarSign, disabled: true },
   { to: '/investments', label: 'Invest', icon: TrendingUp, disabled: true },
   { to: '/goals', label: 'Goals', icon: Target, disabled: true },
-  { to: '/settings', label: 'Prefs', icon: Settings2, disabled: false },
+  { to: '/settings', label: 'Configuration', icon: Settings2, disabled: false },
 ] as const
 
 export default function Header() {
   return (
-    <aside className="border-b border-[var(--border)] pt-16 lg:fixed lg:top-10 lg:left-[max(1rem,calc((100vw-1320px)/2+1rem))] lg:z-10 lg:w-[180px] lg:border-b-0 lg:pt-0">
-      <div className="bg-[var(--sidebar)] px-4 pb-4 pt-4 sm:px-5 lg:flex lg:flex-col lg:rounded-lg lg:px-4 lg:pb-5 lg:pt-5">
+    <aside className="border-b border-border pt-16 lg:fixed lg:top-10 lg:left-[max(1rem,calc((100vw-1320px)/2+1rem))] lg:z-10 lg:w-[220px] lg:border-b-0 lg:pt-0">
+      <div className="bg-sidebar px-4 pb-4 pt-4 sm:px-5 lg:flex lg:flex-col lg:rounded-lg lg:px-4 lg:pb-5 lg:pt-5">
         <div className="flex items-center justify-between gap-3 lg:block">
           <Link
             to="/debts"

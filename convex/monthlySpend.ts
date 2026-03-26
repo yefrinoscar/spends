@@ -25,6 +25,7 @@ function isInCurrency(currency: string, selectedCurrency?: string) {
 function getDebtPlannedPayment(debt: {
   balance: number
   payments: number
+  remainingInstallments?: number
   minimumPayment?: number
   targetPayment?: number
 }) {
@@ -36,7 +37,7 @@ function getDebtPlannedPayment(debt: {
     return debt.minimumPayment
   }
 
-  return debt.balance / Math.max(1, debt.payments)
+  return debt.balance / Math.max(1, debt.remainingInstallments ?? debt.payments)
 }
 
 function isRecurringActiveInMonth(

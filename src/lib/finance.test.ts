@@ -80,6 +80,8 @@ const dashboardFixture: DashboardData = {
   recurringPayments: [],
   settings: {
     currency: 'USD',
+    theme: 'dark',
+    motion: 'full',
     lastUpdated: '2026-03-01T00:00:00.000Z',
   },
 }
@@ -131,6 +133,16 @@ describe('finance helpers', () => {
         payments: 8,
         minimumPayment: 40,
         targetPayment: 100,
+      }),
+    ).toBe(100)
+  })
+
+  it('uses remaining installments for recalculated debt payments', () => {
+    expect(
+      getDebtPlannedPayment({
+        balance: 700,
+        payments: 10,
+        remainingInstallments: 7,
       }),
     ).toBe(100)
   })

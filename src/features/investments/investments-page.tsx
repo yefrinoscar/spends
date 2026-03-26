@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { InvestmentForm } from '@/features/finance/forms'
+import { InvestmentForm } from './components/investment-form'
 import {
   EmptyRow,
   FinancePageState,
@@ -130,10 +130,10 @@ function InvestmentsView({
                     <TableRow key={investment.id}>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-[var(--foreground)]">
+                          <p className="font-medium text-foreground">
                             {investment.name}
                           </p>
-                          <p className="text-xs text-[var(--foreground-faint)]">
+                          <p className="text-xs text-foreground-faint">
                             {investment.account}
                           </p>
                         </div>
@@ -151,7 +151,7 @@ function InvestmentsView({
                         )}
                       </TableCell>
                       <TableCell
-                        className={`text-right font-mono ${investment.changePct >= 0 ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}
+                        className={`text-right font-mono ${investment.changePct >= 0 ? 'text-success' : 'text-danger'}`}
                       >
                         {formatPercent(investment.changePct)}
                       </TableCell>
@@ -209,7 +209,7 @@ function InvestmentsView({
                 helps you decide.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 text-base leading-6 text-[var(--foreground-soft)]">
+            <CardContent className="space-y-3 text-base leading-6 text-muted-foreground">
               <p>
                 Use one row per bucket or account, not every holding if that
                 feels noisy.

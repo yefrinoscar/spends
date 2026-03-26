@@ -10,7 +10,7 @@ function Progress({ className, value = 0, ...props }: ProgressProps) {
   return (
     <div
       className={cn(
-        'h-2.5 w-full overflow-hidden rounded-full bg-[var(--surface-muted)]',
+        'h-2.5 w-full overflow-hidden rounded-full bg-muted',
         className,
       )}
       {...props}

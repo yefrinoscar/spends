@@ -69,21 +69,21 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
           ref={ref}
           id={id}
           className={cn(
-            'flex h-11 w-full items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--panel-elevated)] px-3 py-2 text-base text-[var(--foreground)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-[var(--foreground-faint)]',
+            'flex h-11 w-full items-center justify-between rounded-xl border border-border bg-popover px-3 py-2 text-base text-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground/80',
             className,
           )}
         >
           <SelectPrimitive.Value placeholder={placeholder} />
           <SelectPrimitive.Icon asChild>
-            <ChevronDown className="h-4 w-4 text-[var(--foreground-faint)]" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </SelectPrimitive.Icon>
         </SelectPrimitive.Trigger>
         <SelectPrimitive.Portal>
           <SelectPrimitive.Content
             position="popper"
-            className="z-[80] max-h-72 min-w-[8rem] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--panel-elevated)] text-[var(--foreground)] shadow-xl"
+            className="z-[80] max-h-72 min-w-[8rem] overflow-hidden rounded-xl border border-border bg-popover text-foreground shadow-xl"
           >
-            <SelectPrimitive.ScrollUpButton className="flex h-8 items-center justify-center text-[var(--foreground-faint)]">
+            <SelectPrimitive.ScrollUpButton className="flex h-8 items-center justify-center text-muted-foreground">
               <ChevronUp className="h-4 w-4" />
             </SelectPrimitive.ScrollUpButton>
             <SelectPrimitive.Viewport className="p-1">
@@ -92,7 +92,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                   key={option.value}
                   value={option.value}
                   disabled={option.disabled}
-                  className="relative flex w-full cursor-default select-none items-center rounded-md py-2 pl-8 pr-2 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[highlighted]:bg-[var(--surface-muted)] data-[highlighted]:text-[var(--foreground)]"
+                  className="relative flex w-full cursor-default select-none items-center rounded-md py-2 pl-8 pr-2 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[highlighted]:bg-muted data-[highlighted]:text-foreground"
                 >
                   <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
                     <SelectPrimitive.ItemIndicator>
@@ -105,7 +105,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                 </SelectPrimitive.Item>
               ))}
             </SelectPrimitive.Viewport>
-            <SelectPrimitive.ScrollDownButton className="flex h-8 items-center justify-center text-[var(--foreground-faint)]">
+            <SelectPrimitive.ScrollDownButton className="flex h-8 items-center justify-center text-muted-foreground">
               <ChevronDown className="h-4 w-4" />
             </SelectPrimitive.ScrollDownButton>
           </SelectPrimitive.Content>

@@ -35,6 +35,46 @@
   --muted-foreground: var(--foreground-soft);
   --input: var(--border);
   --radius: 0.875rem;
+  --background-gradient: linear-gradient(180deg, #060606 0%, #050505 100%);
+  --selection-bg: rgba(255, 255, 255, 0.22);
+  --selection-text: #fff;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --background: #f6f0e7;
+  --shell: #ede4d6;
+  --foreground: #261f18;
+  --foreground-soft: #63584d;
+  --foreground-faint: #887867;
+  --panel: #fff9f1;
+  --panel-elevated: #fffdf8;
+  --surface-muted: #efe5d6;
+  --sidebar: #f1e8da;
+  --border: #decfbb;
+  --border-strong: #cab89f;
+  --ring: rgba(61, 45, 29, 0.16);
+  --accent: #275d57;
+  --accent-soft: #36766e;
+  --success: #4b8d67;
+  --warning: #b77b2d;
+  --danger: #c16059;
+  --card: var(--panel);
+  --card-foreground: var(--foreground);
+  --popover: var(--panel-elevated);
+  --popover-foreground: var(--foreground);
+  --primary: var(--accent);
+  --primary-foreground: #fff8ef;
+  --secondary: var(--surface-muted);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--surface-muted);
+  --muted-foreground: var(--foreground-soft);
+  --input: #d0bfab;
+  --background-gradient:
+    radial-gradient(circle at top, rgba(39, 93, 87, 0.1), transparent 34%),
+    linear-gradient(180deg, #fbf7ef 0%, #f2e8da 100%);
+  --selection-bg: rgba(39, 93, 87, 0.18);
+  --selection-text: #241d17;
 }
 
 @theme inline {
@@ -42,6 +82,7 @@
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-foreground-faint: var(--foreground-faint);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -53,8 +94,13 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -72,15 +118,15 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   background-color: var(--background);
-  background: linear-gradient(180deg, #060606 0%, #050505 100%);
+  background: var(--background-gradient);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background: rgba(255, 255, 255, 0.22);
-  color: #fff;
+  background: var(--selection-bg);
+  color: var(--selection-text);
 }
 
 a {
@@ -271,4 +317,17 @@ body::-webkit-scrollbar-corner,
 
 .shell-route-enter {
   animation: shell-route-enter 180ms ease-out;
+}
+
+:root[data-motion='reduced'] *,
+:root[data-motion='reduced'] *::before,
+:root[data-motion='reduced'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+:root[data-motion='reduced'] .shell-route-enter {
+  animation: none;
 }

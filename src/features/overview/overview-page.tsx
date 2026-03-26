@@ -118,8 +118,8 @@ function OverviewView({ data }: { data: DashboardData }) {
       </section>
 
       {debtMonthlyTotals.length ? (
-        <section className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--panel)] px-3 py-2 text-xs text-[var(--foreground-soft)]">
-          <span className="mr-2 uppercase tracking-[0.12em] text-[var(--foreground-faint)]">
+        <section className="mt-3 rounded-xl border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+          <span className="mr-2 uppercase tracking-[0.12em] text-foreground-faint">
             Monthly debt payments:
           </span>
           {debtMonthlyTotals
@@ -141,43 +141,41 @@ function OverviewView({ data }: { data: DashboardData }) {
             />
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-3">
+            <div className="rounded-2xl border border-border bg-muted px-4 py-3">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="eyebrow text-[var(--foreground-faint)]">
-                    Next debt due
-                  </p>
-                  <p className="mt-2 text-base font-semibold text-[var(--foreground)]">
+                  <p className="eyebrow text-foreground-faint">Next debt due</p>
+                  <p className="mt-2 text-base font-semibold text-foreground">
                     {nextDebt ? nextDebt.name : 'No debts yet'}
                   </p>
-                  <p className="mt-1 text-base text-[var(--foreground-soft)]">
+                  <p className="mt-1 text-base text-muted-foreground">
                     {nextDebt
                       ? `${nextDebt.lender} · ${formatDate(nextDebt.dueDate)}`
                       : 'Add a balance to start tracking it here.'}
                   </p>
                 </div>
-                <p className="font-mono text-base text-[var(--foreground)]">
+                <p className="font-mono text-base text-foreground">
                   {nextDebt ? formatCurrency(nextDebt.balance, currency) : '--'}
                 </p>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-3">
+            <div className="rounded-2xl border border-border bg-muted px-4 py-3">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="eyebrow text-[var(--foreground-faint)]">
+                  <p className="eyebrow text-foreground-faint">
                     Next income landing
                   </p>
-                  <p className="mt-2 text-base font-semibold text-[var(--foreground)]">
+                  <p className="mt-2 text-base font-semibold text-foreground">
                     {nextIncome ? nextIncome.name : 'No incomes yet'}
                   </p>
-                  <p className="mt-1 text-base text-[var(--foreground-soft)]">
+                  <p className="mt-1 text-base text-muted-foreground">
                     {nextIncome
                       ? `${nextIncome.source} · ${formatDate(nextIncome.nextDate)}`
                       : 'Add an income lane to see the next arrival.'}
                   </p>
                 </div>
-                <p className="font-mono text-base text-[var(--foreground)]">
+                <p className="font-mono text-base text-foreground">
                   {nextIncome
                     ? formatCurrency(nextIncome.amount, currency)
                     : '--'}
@@ -185,22 +183,22 @@ function OverviewView({ data }: { data: DashboardData }) {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-3">
+            <div className="rounded-2xl border border-border bg-muted px-4 py-3">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="eyebrow text-[var(--foreground-faint)]">
+                  <p className="eyebrow text-foreground-faint">
                     Closest goal checkpoint
                   </p>
-                  <p className="mt-2 text-base font-semibold text-[var(--foreground)]">
+                  <p className="mt-2 text-base font-semibold text-foreground">
                     {nextGoal ? nextGoal.name : 'No goals yet'}
                   </p>
-                  <p className="mt-1 text-base text-[var(--foreground-soft)]">
+                  <p className="mt-1 text-base text-muted-foreground">
                     {nextGoal
                       ? `${nextGoal.type} · ${formatDate(nextGoal.deadline)}`
                       : 'Set a target to bring the next milestone into view.'}
                   </p>
                 </div>
-                <p className="font-mono text-base text-[var(--foreground)]">
+                <p className="font-mono text-base text-foreground">
                   {nextGoal
                     ? formatCurrency(
                         Math.max(nextGoal.target - nextGoal.current, 0),
@@ -231,15 +229,15 @@ function OverviewView({ data }: { data: DashboardData }) {
                   <div key={goal.id} className="space-y-2">
                     <div className="flex items-center justify-between gap-3 text-base">
                       <div>
-                        <p className="font-medium text-[var(--foreground)]">
+                        <p className="font-medium text-foreground">
                           {goal.name}
                         </p>
-                        <p className="text-[var(--foreground-soft)]">
+                        <p className="text-muted-foreground">
                           {formatCurrency(goal.current, currency)} of{' '}
                           {formatCurrency(goal.target, currency)}
                         </p>
                       </div>
-                      <span className="font-mono text-[var(--foreground)]">
+                      <span className="font-mono text-foreground">
                         {progress.toFixed(0)}%
                       </span>
                     </div>
@@ -248,7 +246,7 @@ function OverviewView({ data }: { data: DashboardData }) {
                 )
               })
             ) : (
-              <p className="text-base leading-6 text-[var(--foreground-soft)]">
+              <p className="text-base leading-6 text-muted-foreground">
                 Add your first goal to start tracking progress here.
               </p>
             )}
@@ -327,10 +325,10 @@ function OverviewView({ data }: { data: DashboardData }) {
                     <TableRow key={item.id}>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-[var(--foreground)]">
+                          <p className="font-medium text-foreground">
                             {item.label}
                           </p>
-                          <p className="text-xs text-[var(--foreground-faint)]">
+                          <p className="text-xs text-foreground-faint">
                             Added {formatDate(item.createdAt)}
                           </p>
                         </div>
@@ -340,7 +338,7 @@ function OverviewView({ data }: { data: DashboardData }) {
                           {item.kind}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-[var(--foreground-soft)]">
+                      <TableCell className="text-muted-foreground">
                         {item.meta}
                       </TableCell>
                       <TableCell className="text-right font-mono">

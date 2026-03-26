@@ -8,14 +8,13 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          'border-[var(--border)] bg-[var(--surface-muted)] text-[var(--foreground-soft)]',
+        default: 'border-border bg-muted text-muted-foreground',
         success:
-          'border-[color-mix(in_srgb,var(--success)_18%,white)] bg-[color-mix(in_srgb,var(--success)_12%,white)] text-[var(--success)]',
+          'border-[color-mix(in_srgb,var(--success)_18%,white)] bg-[color-mix(in_srgb,var(--success)_12%,white)] text-success',
         warning:
-          'border-[color-mix(in_srgb,var(--warning)_18%,white)] bg-[color-mix(in_srgb,var(--warning)_12%,white)] text-[var(--warning)]',
+          'border-[color-mix(in_srgb,var(--warning)_18%,white)] bg-[color-mix(in_srgb,var(--warning)_12%,white)] text-warning',
         danger:
-          'border-[color-mix(in_srgb,var(--danger)_20%,white)] bg-[color-mix(in_srgb,var(--danger)_10%,white)] text-[var(--danger)]',
+          'border-[color-mix(in_srgb,var(--danger)_20%,white)] bg-[color-mix(in_srgb,var(--danger)_10%,white)] text-danger',
       },
     },
     defaultVariants: {

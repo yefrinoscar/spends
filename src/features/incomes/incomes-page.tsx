@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { IncomeForm } from '@/features/finance/forms'
+import { IncomeForm } from './components/income-form'
 import {
   EmptyRow,
   FinancePageState,
@@ -140,10 +140,10 @@ function IncomesView({
                     <TableRow key={income.id}>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-[var(--foreground)]">
+                          <p className="font-medium text-foreground">
                             {income.name}
                           </p>
-                          <p className="text-xs text-[var(--foreground-faint)]">
+                          <p className="text-xs text-foreground-faint">
                             {income.source}
                           </p>
                         </div>
@@ -214,7 +214,7 @@ function IncomesView({
                 without extra math.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 text-base leading-6 text-[var(--foreground-soft)]">
+            <CardContent className="space-y-3 text-base leading-6 text-muted-foreground">
               <p>
                 Use short labels for each lane, and store the real source in the
                 second field.

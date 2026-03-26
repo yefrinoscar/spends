@@ -52,10 +52,10 @@ export function DebtsSummaryColumn({
 
   const projection = useMemo(() => getDebtProjection(debtScope), [debtScope])
   return (
-    <div className="inline-block align-top w-[320px] rounded-[1.1rem] border border-[var(--border)] bg-[var(--panel)] p-3 sm:p-3.5">
+    <div className="inline-block align-top w-[320px] rounded-[1.1rem] border border-border bg-card p-3 sm:p-3.5">
       <div className="mb-3">
         <p className="eyebrow">Summary</p>
-        <h2 className="mt-1 text-base font-semibold tracking-tight text-[var(--foreground)]">
+        <h2 className="mt-1 text-base font-semibold tracking-tight text-foreground">
           Complete overview
         </h2>
       </div>
@@ -63,8 +63,8 @@ export function DebtsSummaryColumn({
       <DebtProjectionChart currency={defaultCurrency} points={projection} />
 
       <div className="mt-3 space-y-3">
-        <div className="rounded-lg bg-[var(--surface-muted)] p-2.5">
-          <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--foreground-faint)] mb-2">
+        <div className="rounded-lg bg-muted p-2.5">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-foreground-faint mb-2">
             Monthly Payments
           </p>
           <div className="space-y-1.5 text-xs">
@@ -73,11 +73,11 @@ export function DebtsSummaryColumn({
                 const monthlyPayment = getDebtPlannedPayment(debt)
                 return (
                   <div key={debt.id} className="flex justify-between">
-                    <span className="text-[var(--foreground-soft)] truncate mr-2">
+                    <span className="text-muted-foreground truncate mr-2">
                       {debt.name}
                     </span>
                     <AnimatedCurrencyValue
-                      className="font-mono whitespace-nowrap text-[var(--warning)]"
+                      className="font-mono whitespace-nowrap text-warning"
                       currency={debt.currency}
                       value={monthlyPayment}
                     />
@@ -86,26 +86,26 @@ export function DebtsSummaryColumn({
               })
             ) : (
               <div className="flex justify-between">
-                <span className="text-[var(--foreground-soft)]">No debts</span>
-                <span className="font-mono text-[var(--foreground)]">--</span>
+                <span className="text-muted-foreground">No debts</span>
+                <span className="font-mono text-foreground">--</span>
               </div>
             )}
           </div>
         </div>
 
-        <div className="rounded-lg bg-[var(--surface-muted)] p-2.5">
-          <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--foreground-faint)] mb-2">
+        <div className="rounded-lg bg-muted p-2.5">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-foreground-faint mb-2">
             Recurring Payments Detail
           </p>
           <div className="space-y-1.5 text-xs">
             {recurringPaymentsInCurrency.length ? (
               recurringPaymentsInCurrency.map((payment) => (
                 <div key={payment.id} className="flex justify-between">
-                  <span className="text-[var(--foreground-soft)] truncate mr-2">
+                  <span className="text-muted-foreground truncate mr-2">
                     {payment.name}
                   </span>
                   <AnimatedCurrencyValue
-                    className="font-mono whitespace-nowrap text-[var(--success)]"
+                    className="font-mono whitespace-nowrap text-success"
                     currency={payment.currency}
                     value={payment.amount}
                   />
@@ -113,42 +113,40 @@ export function DebtsSummaryColumn({
               ))
             ) : (
               <div className="flex justify-between">
-                <span className="text-[var(--foreground-soft)]">
+                <span className="text-muted-foreground">
                   No recurring payments
                 </span>
-                <span className="font-mono text-[var(--foreground)]">--</span>
+                <span className="font-mono text-foreground">--</span>
               </div>
             )}
           </div>
         </div>
 
-        <div className="rounded-lg bg-[var(--surface-muted)] p-2.5">
-          <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--foreground-faint)] mb-2">
+        <div className="rounded-lg bg-muted p-2.5">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-foreground-faint mb-2">
             Combined Overview
           </p>
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between">
-              <span className="text-[var(--foreground-soft)]">All debts</span>
+              <span className="text-muted-foreground">All debts</span>
               <AnimatedCurrencyValue
-                className="font-mono text-[var(--foreground)]"
+                className="font-mono text-foreground"
                 currency={defaultCurrency}
                 value={totalBalance}
               />
             </div>
             <div className="flex justify-between">
-              <span className="text-[var(--foreground-soft)]">
-                All recurring
-              </span>
+              <span className="text-muted-foreground">All recurring</span>
               <AnimatedCurrencyValue
-                className="font-mono text-[var(--foreground)]"
+                className="font-mono text-foreground"
                 currency={defaultCurrency}
                 value={totalRecurringMonthly}
               />
             </div>
-            <div className="flex justify-between border-t border-[var(--border)] pt-1.5 mt-1.5 font-semibold">
-              <span className="text-[var(--foreground)]">Combined monthly</span>
+            <div className="flex justify-between border-t border-border pt-1.5 mt-1.5 font-semibold">
+              <span className="text-foreground">Combined monthly</span>
               <AnimatedCurrencyValue
-                className="font-mono text-[var(--warning)]"
+                className="font-mono text-warning"
                 currency={defaultCurrency}
                 value={monthlyDebtPayment + totalRecurringMonthly}
               />

@@ -71,18 +71,15 @@ function LoadingState() {
   return (
     <main className="page-wrap px-4 pb-16">
       <div className="animate-pulse space-y-4">
-        <div className="h-8 w-32 rounded-md bg-[var(--panel)]" />
+        <div className="h-8 w-32 rounded-md bg-card" />
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_300px]">
-          <div className="h-[320px] rounded-[1.5rem] border border-[var(--border)] bg-[var(--panel)]" />
-          <div className="h-[320px] rounded-[1.5rem] border border-[var(--border)] bg-[var(--panel)]" />
+          <div className="h-[320px] rounded-[1.5rem] border border-border bg-card" />
+          <div className="h-[320px] rounded-[1.5rem] border border-border bg-card" />
         </div>
-        <div className="rounded-[1.5rem] border border-[var(--border)] bg-[var(--panel)] p-5">
+        <div className="rounded-[1.5rem] border border-border bg-card p-5">
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-14 rounded-xl bg-[var(--surface-muted)]"
-              />
+              <div key={index} className="h-14 rounded-xl bg-muted" />
             ))}
           </div>
         </div>
@@ -103,15 +100,15 @@ export function PageIntro({
   meta: { label: string; value: string }[]
 }) {
   return (
-    <section className="relative overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[var(--panel)] px-6 py-6 sm:px-8 sm:py-8">
+    <section className="relative overflow-hidden rounded-[1.5rem] border border-border bg-card px-6 py-6 sm:px-8 sm:py-8">
       <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--border-strong),transparent)]" />
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="max-w-3xl">
           <p className="eyebrow">{eyebrow}</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-[2.35rem]">
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-[2.35rem]">
             {title}
           </h1>
-          <p className="mt-2 max-w-2xl text-base leading-6 text-[var(--foreground-soft)] sm:text-base">
+          <p className="mt-2 max-w-2xl text-base leading-6 text-muted-foreground sm:text-base">
             {description}
           </p>
         </div>
@@ -119,12 +116,10 @@ export function PageIntro({
           {meta.map((item) => (
             <div
               key={item.label}
-              className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-3"
+              className="rounded-2xl border border-border bg-muted px-3 py-3"
             >
-              <p className="eyebrow text-[var(--foreground-faint)]">
-                {item.label}
-              </p>
-              <p className="mt-1.5 text-base font-semibold tracking-tight text-[var(--foreground)] sm:text-base">
+              <p className="eyebrow text-foreground-faint">{item.label}</p>
+              <p className="mt-1.5 text-base font-semibold tracking-tight text-foreground sm:text-base">
                 {item.value}
               </p>
             </div>
@@ -150,16 +145,16 @@ export function MetricCard({
     <Card className="h-full">
       <CardContent className="flex h-full flex-col gap-3 p-4">
         <div className="flex items-center justify-between gap-3">
-          <p className="eyebrow text-[var(--foreground-faint)]">{title}</p>
-          <div className="grid h-10 w-10 place-items-center rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--foreground)]">
+          <p className="eyebrow text-foreground-faint">{title}</p>
+          <div className="grid h-10 w-10 place-items-center rounded-2xl border border-border bg-muted text-foreground">
             <Icon className="h-4.5 w-4.5" />
           </div>
         </div>
         <div>
-          <p className="text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-[1.85rem]">
+          <p className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.85rem]">
             {value}
           </p>
-          <p className="mt-1.5 text-base leading-6 text-[var(--foreground-soft)]">
+          <p className="mt-1.5 text-base leading-6 text-muted-foreground">
             {note}
           </p>
         </div>
@@ -180,10 +175,10 @@ export function SectionTitle({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight text-[var(--foreground)]">
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">
           {title}
         </h2>
-        <p className="mt-1 text-base leading-6 text-[var(--foreground-soft)]">
+        <p className="mt-1 text-base leading-6 text-muted-foreground">
           {description}
         </p>
       </div>
@@ -203,7 +198,7 @@ export function EmptyRow({
     <TableRow>
       <TableCell
         colSpan={colSpan}
-        className="py-12 text-center text-base text-[var(--foreground-soft)]"
+        className="py-12 text-center text-base text-muted-foreground"
       >
         {message}
       </TableCell>
@@ -371,7 +366,7 @@ export function DebtProjectionChart({
 
   if (!points.length) {
     return (
-      <div className="flex h-[80px] items-center justify-center rounded-2xl border border-dashed border-[var(--border)] text-base text-[var(--foreground-soft)]">
+      <div className="flex h-[80px] items-center justify-center rounded-2xl border border-dashed border-border text-base text-muted-foreground">
         Add a debt to see the payoff curve.
       </div>
     )
@@ -419,14 +414,14 @@ export function DebtProjectionChart({
   return (
     <div>
       <div className="mb-3">
-        <p className="text-xs uppercase tracking-[0.12em] text-[var(--foreground-faint)]">
+        <p className="text-xs uppercase tracking-[0.12em] text-foreground-faint">
           {activePoint.monthIndex === 0 ? 'Now' : activePoint.label}
         </p>
-        <p className="mt-1 font-mono text-lg text-[var(--foreground)]">
+        <p className="mt-1 font-mono text-lg text-foreground">
           {formatCurrency(activePoint.balance, currency)}
         </p>
       </div>
-      <div className="mb-3 flex items-center justify-between gap-4 text-xs text-[var(--foreground-faint)]">
+      <div className="mb-3 flex items-center justify-between gap-4 text-xs text-foreground-faint">
         <span>{formatCurrency(firstBalance, currency)}</span>
         <span>{formatCurrency(lastBalance, currency)}</span>
       </div>
@@ -484,7 +479,7 @@ export function DebtProjectionChart({
           ))}
         </div>
       </div>
-      <div className="mt-3 flex items-center justify-between gap-4 text-xs uppercase tracking-[0.12em] text-[var(--foreground-faint)]">
+      <div className="mt-3 flex items-center justify-between gap-4 text-xs uppercase tracking-[0.12em] text-foreground-faint">
         {markers.map((point) => (
           <span key={`${point.monthIndex}-${point.label}`}>
             {point.monthIndex === 0 ? 'Now' : point.label}
@@ -515,16 +510,14 @@ export function QuickLinkCard({
         <CardTitle className="text-2xl">{value}</CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
-        <p className="text-base leading-6 text-[var(--foreground-soft)]">
-          {note}
-        </p>
+        <p className="text-base leading-6 text-muted-foreground">{note}</p>
         <Separator className="my-4" />
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs tracking-[0.12em] uppercase text-[var(--foreground-faint)]">
+          <p className="text-xs tracking-[0.12em] uppercase text-foreground-faint">
             {summary}
           </p>
           <Link
-            className="inline-flex items-center gap-2 text-base font-medium text-[var(--foreground)] no-underline"
+            className="inline-flex items-center gap-2 text-base font-medium text-foreground no-underline"
             to={href}
           >
             Open

@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { GoalForm } from '@/features/finance/forms'
+import { GoalForm } from './components/goal-form'
 import {
   FinancePageState,
   MetricCard,
@@ -102,22 +102,22 @@ function GoalsView({
                 return (
                   <div
                     key={goal.id}
-                    className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-4"
+                    className="rounded-2xl border border-border bg-muted px-4 py-4"
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-[var(--foreground)]">
+                          <p className="font-medium text-foreground">
                             {goal.name}
                           </p>
                           <Badge>{goal.type}</Badge>
                         </div>
-                        <p className="mt-1 text-base text-[var(--foreground-soft)]">
+                        <p className="mt-1 text-base text-muted-foreground">
                           Due {formatDate(goal.deadline)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 sm:justify-end">
-                        <span className="font-mono text-base text-[var(--foreground)]">
+                        <span className="font-mono text-base text-foreground">
                           {formatCurrency(goal.current, currency)} /{' '}
                           {formatCurrency(goal.target, currency)}
                         </span>
@@ -138,7 +138,7 @@ function GoalsView({
                     </div>
                     <div className="mt-4 space-y-2">
                       <Progress value={progress} />
-                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.12em] text-[var(--foreground-faint)]">
+                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.12em] text-foreground-faint">
                         <span>{progress.toFixed(0)}% funded</span>
                         <span>
                           {formatCurrency(
@@ -153,7 +153,7 @@ function GoalsView({
                 )
               })
             ) : (
-              <div className="rounded-2xl border border-dashed border-[var(--border)] px-4 py-10 text-center text-base text-[var(--foreground-soft)]">
+              <div className="rounded-2xl border border-dashed border-border px-4 py-10 text-center text-base text-muted-foreground">
                 Add a goal to start tracking its progress here.
               </div>
             )}
@@ -186,7 +186,7 @@ function GoalsView({
                 instantly know the win, it is working.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 text-base leading-6 text-[var(--foreground-soft)]">
+            <CardContent className="space-y-3 text-base leading-6 text-muted-foreground">
               <p>
                 Use separate goals for emergency cash, debt payoff, and
                 investing milestones.

@@ -16,7 +16,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import { RecurringPaymentForm } from '@/features/finance/forms'
+import { RecurringPaymentForm } from './recurring-payment-form'
 import {
   AnimatedCurrencyValue,
   sortByDateAscending,
@@ -74,7 +74,7 @@ export function RecurringPaymentsColumn({
         title: 'Active',
         description: 'Included in monthly totals.',
         labelClassName:
-          'bg-[color-mix(in_srgb,var(--success)_14%,transparent)] text-[var(--success)]',
+          'bg-[color-mix(in_srgb,var(--success)_14%,transparent)] text-success',
         items: sortPayments(active),
       },
       {
@@ -82,7 +82,7 @@ export function RecurringPaymentsColumn({
         title: 'Paused',
         description: 'Temporarily excluded until reactivated.',
         labelClassName:
-          'bg-[color-mix(in_srgb,var(--warning)_16%,transparent)] text-[var(--warning)]',
+          'bg-[color-mix(in_srgb,var(--warning)_16%,transparent)] text-warning',
         items: sortPayments(paused),
       },
       {
@@ -90,7 +90,7 @@ export function RecurringPaymentsColumn({
         title: 'Cancelled',
         description: 'Kept as history and shown last.',
         labelClassName:
-          'bg-[color-mix(in_srgb,var(--danger)_14%,transparent)] text-[var(--danger)]',
+          'bg-[color-mix(in_srgb,var(--danger)_14%,transparent)] text-danger',
         items: sortPayments(cancelled),
       },
     ].filter((section) => section.items.length > 0)
@@ -114,11 +114,11 @@ export function RecurringPaymentsColumn({
     setEditingPaymentId(null)
   }
   return (
-    <div className="inline-block align-top w-[320px] rounded-[1.1rem] border border-[var(--border)] bg-[var(--panel)] p-3 sm:p-3.5">
+    <div className="inline-block align-top w-[320px] rounded-[1.1rem] border border-border bg-card p-3 sm:p-3.5">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div>
           <p className="eyebrow">Recurring Payments</p>
-          <h2 className="mt-1 text-base font-semibold tracking-tight text-[var(--foreground)]">
+          <h2 className="mt-1 text-base font-semibold tracking-tight text-foreground">
             Monthly subscriptions
           </h2>
         </div>
@@ -187,7 +187,7 @@ export function RecurringPaymentsColumn({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold tracking-tight text-[var(--foreground)]">
+                    <h3 className="text-sm font-semibold tracking-tight text-foreground">
                       {section.title}
                     </h3>
                     <span
@@ -196,7 +196,7 @@ export function RecurringPaymentsColumn({
                       {section.items.length}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-[var(--foreground-soft)]">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {section.description}
                   </p>
                 </div>
@@ -224,17 +224,17 @@ export function RecurringPaymentsColumn({
                     ? 'bg-[color-mix(in_srgb,var(--danger)_7%,var(--surface-muted))] opacity-55 hover:bg-[color-mix(in_srgb,var(--danger)_10%,var(--surface-muted))] hover:opacity-70'
                     : isPaused
                       ? 'bg-[color-mix(in_srgb,var(--warning)_10%,var(--surface-muted))] opacity-85 hover:bg-[color-mix(in_srgb,var(--warning)_14%,var(--surface-muted))] hover:opacity-100'
-                      : 'bg-[var(--surface-muted)] hover:bg-[var(--panel-elevated)]'
+                      : 'bg-muted hover:bg-popover'
                   const paymentDateClassName = isCancelled
                     ? 'bg-[color-mix(in_srgb,var(--danger)_12%,var(--panel))]'
                     : isPaused
                       ? 'bg-[color-mix(in_srgb,var(--warning)_16%,var(--panel))]'
                       : 'bg-[color-mix(in_srgb,var(--success)_16%,var(--panel))]'
                   const paymentMonthClassName = isCancelled
-                    ? 'text-[var(--danger)]'
+                    ? 'text-danger'
                     : isPaused
-                      ? 'text-[var(--warning)]'
-                      : 'text-[var(--success)]'
+                      ? 'text-warning'
+                      : 'text-success'
 
                   return (
                     <div
@@ -259,20 +259,20 @@ export function RecurringPaymentsColumn({
                           >
                             {pMonth}
                           </span>
-                          <span className="text-lg font-bold leading-tight text-[var(--foreground)]">
+                          <span className="text-lg font-bold leading-tight text-foreground">
                             {pDay}
                           </span>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-base font-medium text-[var(--foreground)]">
+                          <p className="truncate text-base font-medium text-foreground">
                             {payment.name}
                           </p>
-                          <p className="mt-0.5 text-xs text-[var(--foreground-faint)]">
+                          <p className="mt-0.5 text-xs text-foreground-faint">
                             {payment.category}
                           </p>
                         </div>
                         <AnimatedCurrencyValue
-                          className={`self-center font-mono text-base ${isCancelled ? 'text-[var(--foreground-soft)]' : 'text-[var(--foreground)]'}`}
+                          className={`self-center font-mono text-base ${isCancelled ? 'text-muted-foreground' : 'text-foreground'}`}
                           currency={payment.currency}
                           value={payment.amount}
                         />
@@ -302,7 +302,7 @@ export function RecurringPaymentsColumn({
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              className="text-[var(--danger)]"
+                              className="text-danger"
                               onClick={(event) => {
                                 event.stopPropagation()
                                 void actions.updateRecurringPayment({
@@ -337,7 +337,7 @@ export function RecurringPaymentsColumn({
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  className="text-[var(--danger)]"
+                                  className="text-danger"
                                   onClick={(event) => {
                                     event.stopPropagation()
                                     void actions.removeRecurringPayment(
@@ -362,11 +362,11 @@ export function RecurringPaymentsColumn({
         </div>
       ) : (
         <div className="space-y-2">
-          <div className="rounded-lg bg-[var(--surface-muted)] p-3">
-            <p className="text-xs text-[var(--foreground-faint)]">
+          <div className="rounded-lg bg-muted p-3">
+            <p className="text-xs text-foreground-faint">
               No recurring payments added yet.
             </p>
-            <p className="mt-1 text-xs text-[var(--foreground-soft)]">
+            <p className="mt-1 text-xs text-muted-foreground">
               Click New to register your subscriptions and monthly bills.
             </p>
           </div>

@@ -4,12 +4,7 @@ function Separator({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn('h-px w-full bg-[var(--border)]', className)}
-      {...props}
-    />
-  )
+  return <div className={cn('h-px w-full bg-border', className)} {...props} />
 }
 
 export { Separator }

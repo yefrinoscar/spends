@@ -34,6 +34,8 @@ export default defineSchema({
     targetPayment: v.optional(v.number()),
     dueDay: v.optional(v.number()),
     dueDate: v.string(),
+    originalBalance: v.optional(v.number()),
+    currentPlanVersion: v.optional(v.number()),
     status: v.union(v.literal('active'), v.literal('closed')),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -43,6 +45,45 @@ export default defineSchema({
     .index('by_userId_and_currency', ['userId', 'currency'])
     .index('by_userId_and_dueDate', ['userId', 'dueDate'])
     .index('by_userId_and_status_and_dueDate', ['userId', 'status', 'dueDate']),
+
+  debtPlans: defineTable({
+    debtId: v.id('debts'),
+    version: v.number(),
+    principalAtStart: v.number(),
+    installmentsTotal: v.number(),
+    installmentAmount: v.number(),
+    startMonth: v.string(),
+    nextInstallmentNumber: v.number(),
+    status: v.union(
+      v.literal('active'),
+      v.literal('restructured'),
+      v.literal('completed'),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_debtId', ['debtId'])
+    .index('by_debtId_and_version', ['debtId', 'version'])
+    .index('by_debtId_and_status', ['debtId', 'status']),
+
+  debtPayments: defineTable({
+    debtId: v.id('debts'),
+    planVersion: v.number(),
+    installmentNumber: v.number(),
+    amountPaid: v.number(),
+    paidAt: v.string(),
+    requestId: v.string(),
+    createdAt: v.number(),
+  })
+    .index('by_debtId', ['debtId'])
+    .index('by_debtId_and_planVersion', ['debtId', 'planVersion'])
+    .index('by_debtId_and_planVersion_and_installmentNumber', [
+      'debtId',
+      'planVersion',
+      'installmentNumber',
+    ])
+    .index('by_debtId_and_paidAt', ['debtId', 'paidAt'])
+    .index('by_requestId', ['requestId']),
 
   recurringPayments: defineTable({
     userId: v.id('users'),
